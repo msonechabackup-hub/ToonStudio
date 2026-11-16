@@ -1,0 +1,217 @@
+name: Toon Autopilot
+
+on:
+  schedule:
+    - cron: '17 11 * * *'   # every day at 4:47 PM India time
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: toon-autopilot
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install tools
+        run: |
+          npm install --no-save playwright-core@1
+          which ffmpeg || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg)
+          which google-chrome || npx playwright install --with-deps chromium
+
+      - name: Write the autopilot
+        run: |
+          cat > ap.mjs <<'TOON_EOF'
+          // Toon Studio daily autopilot: stats → learnings → episode → video → report
+          import { chromium } from 'playwright-core';
+          import fs from 'node:fs';
+          import http from 'node:http';
+          import path from 'node:path';
+          import { execSync } from 'node:child_process';
+
+          const E = process.env, D = 'autopilot-data', OUT = 'out';
+          fs.mkdirSync(D, { recursive: true }); fs.mkdirSync(OUT, { recursive: true });
+          const rj = (f, d) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return d; } };
+          const wj = (f, v) => fs.writeFileSync(f, JSON.stringify(v, null, 2));
+          const log = (...a) => console.log('[autopilot]', ...a);
+          const setEnv = (k, v) => { if (E.GITHUB_ENV) fs.appendFileSync(E.GITHUB_ENV, `${k}<<__TOON__\n${v}\n__TOON__\n`); };
+          const fmtN = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : String(Math.round(n || 0));
+          const MILESTONES = [100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000];
+
+          const CFG = rj('autopilot-config.json', null);
+          if (!CFG) { log('No autopilot-config.json yet. Save your settings from the app (Channel tab).'); process.exit(0); }
+          const ST = rj(`${D}/state.json`, { part: CFG.startPart || 'Season 1, Part 1', prev: '', history: [], learnings: CFG.learnings || '' });
+          const SN = rj(`${D}/stats.json`, []);
+          const report = [];
+          const today = new Date().toISOString().slice(0, 10);
+
+          // ---------- 1. YouTube stats ----------
+          async function yt(ep, params) {
+            const u = new URL('https://www.googleapis.com/youtube/v3/' + ep);
+            Object.entries({ ...params, key: E.YOUTUBE_API_KEY }).forEach(([k, v]) => u.searchParams.set(k, v));
+            const r = await fetch(u); const j = await r.json().catch(() => ({}));
+            if (!r.ok) throw new Error(ep + ': ' + (j.error?.message || r.status)); return j;
+          }
+          function chParam(c) { c = String(c || '').trim(); let m = c.match(/channel\/(UC[\w-]{22})/) || c.match(/^(UC[\w-]{22})$/); if (m) return { id: m[1] }; m = c.match(/@([\w.\-]+)/); return { forHandle: '@' + (m ? m[1] : c.replace(/^@/, '')) }; }
+          async function channel() {
+            const c = await yt('channels', { part: 'snippet,statistics,contentDetails', ...chParam(CFG.channel) });
+            const ch = (c.items || [])[0]; if (!ch) throw new Error('channel not found: ' + CFG.channel);
+            const pl = await yt('playlistItems', { part: 'contentDetails', playlistId: ch.contentDetails.relatedPlaylists.uploads, maxResults: 50 });
+            const ids = (pl.items || []).map(i => i.contentDetails.videoId); let videos = [];
+            if (ids.length) {
+              const v = await yt('videos', { part: 'snippet,statistics', id: ids.join(',') });
+              videos = (v.items || []).map(x => ({ id: x.id, title: x.snippet.title, published: x.snippet.publishedAt, views: +x.statistics.viewCount || 0, likes: +x.statistics.likeCount || 0, comments: +x.statistics.commentCount || 0 }));
+            }
+            videos.sort((a, b) => b.published.localeCompare(a.published));
+            const comments = [];
+            for (const v of videos.slice(0, 3)) {
+              try { const j = await yt('commentThreads', { part: 'snippet', videoId: v.id, maxResults: 20, order: 'relevance', textFormat: 'plainText' });
+                (j.items || []).forEach(it => comments.push({ video: v.title, text: it.snippet.topLevelComment.snippet.textDisplay.slice(0, 220), likes: it.snippet.topLevelComment.snippet.likeCount || 0 })); } catch { }
+            }
+            return { title: ch.snippet.title, subs: +ch.statistics.subscriberCount || 0, views: +ch.statistics.viewCount || 0, count: +ch.statistics.videoCount || 0, videos, comments };
+          }
+
+          // ---------- Claude ----------
+          async function claude(prompt, maxTokens = 2000) {
+            const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': E.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+              body: JSON.stringify({ model: 'claude-sonnet-5-5', max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] }) });
+            const j = await r.json(); if (!r.ok) throw new Error('Claude: ' + (j.error?.message || r.status));
+            const t = j.content.filter(c => c.type === 'text').map(c => c.text).join(''); const m = t.match(/\{[\s\S]*\}/); return JSON.parse(m ? m[0] : t);
+          }
+
+          let ch = null;
+          if (E.YOUTUBE_API_KEY && CFG.channel) {
+            try {
+              ch = await channel(); log(`channel ${ch.title}: ${ch.subs} subs, ${ch.views} views, ${ch.videos.length} videos`);
+              const last = SN[SN.length - 1] || null, lastV = last ? last.v : {};
+              const lines = [], alerts = [];
+              if (last) {
+                const hours = Math.max(1, (Date.now() - last.ts) / 3600e3);
+                lines.push(`| | Now | Change (${Math.round(hours)}h) |`, '|---|---|---|', `| Subscribers | ${fmtN(ch.subs)} | ${ch.subs - last.subs >= 0 ? '+' : ''}${fmtN(ch.subs - last.subs)} |`, `| Total views | ${fmtN(ch.views)} | +${fmtN(ch.views - last.views)} |`);
+                const m = MILESTONES.filter(x => last.subs < x && ch.subs >= x).pop(); if (m) alerts.push(`🏆 You passed **${fmtN(m)} subscribers**!`);
+                const gains = ch.videos.map(v => ({ ...v, gain: lastV[v.id] != null ? v.views - lastV[v.id] : v.views })).sort((a, b) => b.gain - a.gain);
+                const med = gains.map(g => g.gain).sort((a, b) => a - b)[Math.floor(gains.length / 2)] || 0;
+                gains.forEach(v => { const mm = MILESTONES.filter(x => (lastV[v.id] ?? 0) < x && v.views >= x).pop(); if (mm && lastV[v.id] != null) alerts.push(`🎉 "${v.title}" passed **${fmtN(mm)} views**`); });
+                gains.slice(0, 3).filter(v => v.gain > Math.max(3 * med, 20)).forEach(v => alerts.push(`🔥 "${v.title}" is taking off: **+${fmtN(v.gain)} views**`));
+                report.push('## 📈 Channel', ...lines, '', ...(alerts.length ? ['## 🚨 Alerts', ...alerts.map(a => '- ' + a), ''] : []),
+                  '## Top movers', ...gains.slice(0, 5).map(v => `- **+${fmtN(v.gain)}** · ${v.title} (${fmtN(v.views)} total)`), '');
+                if (alerts.length) setEnv('REPORT_ALERT', alerts[0].replace(/\*\*/g, ''));
+              } else {
+                report.push('## 📈 Channel', `**${fmtN(ch.subs)}** subscribers · **${fmtN(ch.views)}** views · ${ch.count} videos`, '', '_First report. Growth numbers start tomorrow._', '');
+              }
+              const v = {}; ch.videos.forEach(x => v[x.id] = x.views);
+              SN.push({ ts: Date.now(), date: today, subs: ch.subs, views: ch.views, v }); while (SN.length > 120) SN.shift();
+            } catch (e) { log('stats failed:', e.message); report.push('## 📈 Channel', `⚠️ Couldn't read stats: ${e.message}`, ''); }
+          } else report.push('_Add a YOUTUBE_API_KEY secret and your channel in the app to get stats here._', '');
+
+          // ---------- 2. Learn ----------
+          if (ch && ch.videos.length >= 2 && E.ANTHROPIC_API_KEY) {
+            try {
+              const now = Date.now();
+              const data = ch.videos.slice(0, 30).map(v => ({ title: v.title, hoursOld: Math.round((now - Date.parse(v.published)) / 3600e3), views: v.views, likes: v.likes, comments: v.comments }));
+              const j = await claude(`You are a YouTube growth analyst for an animated story series channel. Study the real stats and comments, then write the lessons the story writer must follow for the next episode.
+          Videos (newest first): ${JSON.stringify(data)}
+          Top comments: ${JSON.stringify(ch.comments.slice(0, 30).map(c => c.text))}
+          Previous lessons: ${ST.learnings || 'none'}
+          Return ONLY JSON: {"lessons":"6-8 bullet points starting with '- ' about hooks, titles, story beats, characters and pacing that perform best/worst here, with numbers","requests":"what viewers are asking for, one line","nextIdea":"best idea for the next episode, one line"}`, 1500);
+              ST.learnings = `${j.lessons}\n- Viewers want: ${j.requests}\n- Next idea: ${j.nextIdea}`;
+              report.push('## 🧠 What the writer learned today', ST.learnings, '');
+              log('learnings updated');
+            } catch (e) { log('learning failed:', e.message); }
+          }
+
+          // ---------- 3. Make the episode in the app ----------
+          let ep = null;
+          if (E.ANTHROPIC_API_KEY && CFG.makeVideos !== false) {
+            const root = process.cwd();
+            const srv = http.createServer((q, s) => { let p = decodeURIComponent(new URL(q.url, 'http://x').pathname); if (p === '/') p = '/index.html';
+              fs.readFile(path.join(root, p), (e, b) => { if (e) { s.writeHead(404); s.end(); return; } s.writeHead(200, { 'content-type': p.endsWith('.html') ? 'text/html; charset=utf-8' : 'application/octet-stream' }); s.end(b); }); }).listen(8765);
+            const exe = [E.CHROME_PATH, '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium-browser', '/usr/bin/chromium'].find(f => f && fs.existsSync(f));
+            const br = await chromium.launch({ ...(exe ? { executablePath: exe } : {}), args: ['--autoplay-policy=no-user-gesture-required', '--no-sandbox', '--disable-background-timer-throttling', '--disable-renderer-backgrounding'] });
+            try {
+              const pg = await br.newPage({ viewport: { width: 430, height: 900 } });
+              if (E.TOON_MOCK) await (await import(path.resolve(E.TOON_MOCK))).route(pg);
+              pg.on('console', m => { const t = m.text(); if (t.startsWith('[AP]')) log(t.slice(5)); });
+              pg.on('pageerror', e => log('page error:', e.message));
+              await pg.goto('http://localhost:8765/index.html');
+              await pg.waitForFunction(() => typeof window.autopilotEpisode === 'function', null, { timeout: 30000 });
+              if (E.TOON_MOCK) await (await import(path.resolve(E.TOON_MOCK))).default(pg);
+              const res = await pg.evaluate(o => window.autopilotEpisode(o), { ...CFG, part: ST.part, prev: ST.prev, learnings: ST.learnings, anthropicKey: E.ANTHROPIC_API_KEY, geminiKey: E.GEMINI_API_KEY || '' });
+              ep = res.ep;
+              const raw = path.join(OUT, res.videoType.includes('mp4') ? 'raw.mp4' : 'raw.webm');
+              fs.writeFileSync(raw, Buffer.from(res.video, 'base64'));
+              fs.writeFileSync(path.join(OUT, 'thumbnail.png'), Buffer.from(res.thumb, 'base64'));
+              try { execSync(`ffmpeg -y -v error -i ${raw} -c:v libx264 -preset veryfast -crf 21 -pix_fmt yuv420p -c:a aac -b:a 160k -movflags +faststart ${OUT}/video.mp4`); fs.unlinkSync(raw); }
+              catch { log('ffmpeg missing, keeping original format'); fs.renameSync(raw, path.join(OUT, 'video' + path.extname(raw))); }
+              log('video ready');
+            } catch (e) { log('episode failed:', e.message); report.push(`## ⚠️ Episode\nToday's episode failed: ${e.message}`, ''); }
+            finally { await br.close(); srv.close(); }
+          }
+
+          // ---------- 4. Upload kit + memory ----------
+          if (ep) {
+            const y = ep.youtube || {};
+            const kit = [`# ${ep.title}`, `**${ST.part}** · ${ep.logline || ''}`, '',
+              '## 📱 Post it (1 minute)', '1. Download **video.mp4** below (and **thumbnail.png** for long videos).', '2. Open the YouTube app → **+** → choose the video.', '3. Paste a title and the description below, then post.', '4. Pin the comment below.', '',
+              '## Titles (pick one)', ...(y.titles || []).map(t => '- ' + t), '', '## Description', '```', y.description || '', '```', '',
+              '## Tags', '```', (y.tags || []).join(', '), '```', '', '## Pinned comment', '```', y.pinnedComment || '', '```', '', `**Best time to post:** ${y.bestTime || ''}`, '',
+              '## Script', ...ep.scenes.map((s, i) => `${i + 1}. ${s.narration}`)].join('\n');
+            fs.writeFileSync(path.join(OUT, 'kit.md'), kit);
+            setEnv('EP_TITLE', `${ST.part} · ${ep.title}`.slice(0, 120));
+            ST.history.push({ date: today, part: ST.part, title: ep.title, run: E.GITHUB_RUN_NUMBER || '' });
+            ST.prev = ((ST.prev ? ST.prev + '\n\n' : '') + `[${ST.part}] ${ep.summary || ''}\nSet up for next: ${ep.nextHook || ''}`).slice(-6000);
+            ST.part = ST.part.replace(/(\d+)\s*$/, (m, n) => String(+n + 1));
+            report.unshift(`## 🎬 Today's episode: ${ep.title}`, `Ready to post: open the newest release in this repo.`, '');
+          }
+          wj(`${D}/state.json`, ST); wj(`${D}/stats.json`, SN);
+          fs.writeFileSync(path.join(OUT, 'report.md'), report.join('\n') || 'Nothing to report today.');
+          setEnv('REPORT_TITLE', `📈 Daily report ${today}${ch ? ` · ${fmtN(ch.subs)} subs · ${fmtN(ch.views)} views` : ''}`);
+          log('done');
+
+          TOON_EOF
+
+      - name: Check stats, learn, make today's episode
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: node ap.mjs
+
+      - name: Publish the episode
+        if: env.EP_TITLE != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ep-${{ github.run_number }}
+          name: ${{ env.EP_TITLE }}
+          body_path: out/kit.md
+          prerelease: true
+          files: |
+            out/video.*
+            out/thumbnail.png
+
+      - name: Post the daily report
+        if: always() && hashFiles('out/report.md') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create report --color 0E8A16 --description "Daily autopilot report" 2>/dev/null || true
+          gh issue create --title "${REPORT_TITLE:-Daily report}" --label report --body-file out/report.md
+
+      - name: Save memory for tomorrow
+        if: always()
+        run: |
+          git config user.name "toon-autopilot"
+          git config user.email "toon-autopilot@users.noreply.github.com"
+          git add autopilot-data || true
+          git commit -m "autopilot: $(date +%F) [skip ci]" || echo "nothing new to save"
+          git push || echo "could not save memory"
