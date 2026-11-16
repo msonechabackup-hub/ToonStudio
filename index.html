@@ -64,6 +64,16 @@ video{width:100%;max-height:64vh;border-radius:10px;margin-top:10px;background:#
 .tag{display:inline-block;background:#0f0d14;border-radius:7px;padding:3px 8px;margin:3px;font-size:12px}
 .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ok);color:#06240f;padding:8px 14px;border-radius:99px;font-weight:600;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:20}
 .toast.on{opacity:1}
+a.btn{text-decoration:none}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}.tile{background:var(--panel2);border-radius:12px;padding:10px}.tile b{display:block;font:700 20px Fredoka}.tile span{font-size:11px;color:var(--mut)}.tile i{font-style:normal;font-size:12px;color:var(--ok)}
+.alert{background:#1f2e22;border:1px solid #2f6a40;border-radius:12px;padding:9px 12px;margin:6px 0;font-size:14px}.alert.hot{background:#3a2216;border-color:#8a4a22}
+.vrow{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line);align-items:flex-start}.vrow img{width:96px;border-radius:8px;flex:none;aspect-ratio:16/9;object-fit:cover;background:#000}
+.vrow .vt{font-weight:600;font-size:14px;line-height:1.3}.vrow .vm{font-size:12px;color:var(--mut);margin-top:3px}.badge{display:inline-block;font:700 10px Inter;padding:2px 6px;border-radius:6px;margin-right:4px;background:#3b2a12;color:var(--acc2)}
+.up{color:var(--ok)}.cmt{background:var(--panel2);border-radius:10px;padding:8px 10px;margin:6px 0;font-size:13px}.cmt small{color:var(--mut)}
+#chChart{width:100%;height:170px;margin-top:8px}
+.photorow{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.picker{margin-top:8px}.castc .pcv{width:100%;max-width:100%;border-radius:10px;cursor:crosshair;touch-action:manipulation}.picker .btn.on{border-color:var(--acc2);color:var(--acc2)}
+.artrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.artrow .btn{font-size:12px}
+.ipr{min-height:60px;font-size:12px}
 .voicebox{background:linear-gradient(135deg,#2a2140,#1f2a3a);border:1px solid #47406a;border-radius:14px;padding:14px;margin-bottom:6px}
 .note{background:#2b2412;border:1px solid #5a4a1e;color:#f3e2b0;border-radius:12px;padding:10px 12px;font-size:13px;margin-top:10px}
 .fileb{position:relative;overflow:hidden;margin:0}.fileb input{position:absolute;inset:0;opacity:0;cursor:pointer}
@@ -131,7 +141,29 @@ details.tips summary{cursor:pointer;color:var(--acc2);font-weight:600;font-size:
 </section>
 
 <section id="s-cast"><div id="castOut"></div></section>
-<section id="s-scenes"><div id="scenesOut"></div></section>
+<section id="s-scenes">
+  <div class="card" id="artCard">
+    <h2>🎨 Scene art</h2>
+    <p class="hint">Turn every scene into a full AI illustration, like the viral story reels. Characters are kept consistent across scenes.</p>
+    <label>Art source</label>
+    <select id="artSrc">
+      <option value="gemini">✨ Gemini illustrations (best quality, consistent characters)</option>
+      <option value="free">Free illustrations (no account, slower, less consistent)</option>
+      <option value="cartoon">Built-in cartoon (offline)</option>
+    </select>
+    <div id="gemBox">
+      <label>Google AI Studio key</label>
+      <input id="gemKey" type="password" placeholder="AIza…" autocomplete="off">
+      <div class="bar"><button class="btn ghost sm" id="gemSave">Save key</button><a class="btn ghost sm" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a key ↗</a></div>
+      <details class="tips"><summary>Advanced</summary><label>Image model</label><input id="gemModel" value="gemini-2.5-flash-image"></details>
+    </div>
+    <button class="btn big" id="illBtn">🎨 Illustrate all scenes</button>
+    <div class="prog" id="illProgWrap" style="display:none"><i id="illProg"></i></div>
+    <div class="status" id="illStatus"></div>
+    <div id="sheetBox" style="display:none;margin-top:10px"><div class="hint">Character reference sheet (used to keep everyone looking the same):</div><img id="sheetImg" style="width:100%;border-radius:10px"></div>
+  </div>
+  <div id="scenesOut"></div>
+</section>
 
 <section id="s-video">
   <div class="card">
@@ -204,6 +236,34 @@ details.tips summary{cursor:pointer;color:var(--acc2);font-weight:600;font-size:
   </div>
 </section>
 
+<section id="s-channel">
+  <div class="card">
+    <h2>📈 Your channel</h2>
+    <p class="hint">Live stats from YouTube: growth since your last check, trending videos, milestones, and what viewers are asking for.</p>
+    <div class="row"><div><label>Channel</label><input id="chId" placeholder="@yourhandle or channel link"></div>
+    <div><label>YouTube API key</label><input id="ytKey" type="password" placeholder="AIza…" autocomplete="off"></div></div>
+    <div class="bar"><button class="btn" id="chLoad">🔄 Load stats</button><a class="btn ghost sm" href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">1. Enable YouTube API ↗</a><a class="btn ghost sm" href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">2. Create key ↗</a></div>
+    <div class="status" id="chStatus"></div>
+  </div>
+  <div id="chOut"></div>
+  <div class="card">
+    <h2>🧠 What the writer has learned</h2>
+    <p class="hint">Lessons from your real stats. The story writer follows these for every new episode.</p>
+    <textarea id="learnBox" placeholder="Load stats, then tap Learn. Or write your own notes, e.g. 'Hooks with a question get 2× views'."></textarea>
+    <div class="bar"><button class="btn" id="learnBtn">🧠 Learn from my stats</button><button class="btn ghost sm" id="learnSave">Save notes</button></div>
+    <div class="status" id="learnStatus"></div>
+  </div>
+  <div class="card">
+    <h2>🤖 Daily autopilot</h2>
+    <p class="hint">Every day GitHub checks your stats, learns, then writes, illustrates, voices and renders the next part. You get a notification, watch it, and post it with one tap.</p>
+    <label>GitHub repo</label><input id="ghRepo" placeholder="your-name/ToonStudio">
+    <div class="bar"><button class="btn sm" id="apConfig">⚙️ Save autopilot settings to GitHub</button><a class="btn ghost sm" id="apRun" target="_blank" rel="noopener">▶ Run now</a><a class="btn ghost sm" id="apIssues" target="_blank" rel="noopener">📈 Daily reports</a></div>
+    <p class="hint" style="margin-top:8px">The autopilot uses this app's current series, style, voice and art settings. Tap Save again whenever you change them.</p>
+    <div class="status" id="apStatus"></div>
+    <div id="apList"></div>
+  </div>
+</section>
+
 <section id="s-upload">
   <div id="uploadOut"></div>
   <div class="card">
@@ -225,6 +285,7 @@ details.tips summary{cursor:pointer;color:var(--acc2);font-weight:600;font-size:
   <button data-tab="scenes"><span>🎞️</span>Scenes</button>
   <button data-tab="video"><span>🎬</span>Video</button>
   <button data-tab="upload"><span>🚀</span>Upload</button>
+  <button data-tab="channel"><span>📈</span>Channel</button>
 </nav>
 <div class="toast" id="toast"></div>
 <div id="syncBox" class="overlay" style="display:none"><div class="card synccard">
@@ -707,16 +768,27 @@ function camera(sc,W,H,p,lt,chars){
   const hw=W/(2*z),hh=H/(2*z);cx=clamp(cx,hw,W-hw);cy=clamp(cy,hh,H-hh);
   return{z,cx,cy};
 }
+function drawPhoto(g,W,H,im,si,p,lt,sc){
+  const iw=im.width,ih=im.height,dir=si%4;let z=1.04+.12*p;
+  if(sc.fx==='heartbeat')z*=1+.025*Math.pow(Math.max(0,Math.sin(lt*7.5)),8);
+  const s=Math.max(W/iw,H/ih)*z,w=iw*s,h=ih*s;
+  const px=[-1,1,.6,-.6][dir]*(p-.5),py=[.5,-.4,-.6,.4][dir]*(p-.5);
+  let x=(W-w)/2+px*(w-W),y=(H-h)/2+py*(h-H);
+  if(sc.fx==='speedlines'||sc.sfx==='crash'||sc.fx==='flash'){const sh=Math.max(0,1-lt*2)*16;x+=Math.sin(lt*70)*sh;y+=Math.cos(lt*60)*sh}
+  g.fillStyle='#000';g.fillRect(0,0,W,H);g.drawImage(im,x,y,w,h);
+}
 function renderScene(g,W,H,ep,si,lt,dur){
   const sc=ep.scenes[si],chars=ep.characters||[],{gy,k}=layout(W,H),p=clamp(lt/Math.max(.1,dur));
+  const photo=ep.__imgs&&sc.imgKey&&ep.__imgs[sc.imgKey];
   const cam=camera(sc,W,H,p,lt,chars);
+  if(photo){drawPhoto(g,W,H,photo,si,p,lt,sc)}else{
   g.save();g.translate(W/2,H/2);g.scale(cam.z,cam.z);g.translate(-cam.cx,-cam.cy);
   (BG[sc.bg]||BG.plain)(g,W,H,gy,lt,sc);
   const order=sc.cast.slice().sort((a,b)=>(a.pose==='sit')-(b.pose==='sit'));
   order.forEach((c,i)=>{const ch=chars.find(x=>x.id===c.id);if(!ch)return;
     let x=c.x*W;if(c.pose==='run')x+=c.facing*(p-.5)*W*.25;
     g.save();g.translate(x,gy);g.scale(k,k);drawChar(g,ch,{...c,seed:sc.cast.indexOf(c)+si*.37,talking:false},lt);g.restore()});
-  g.restore();
+  g.restore();}
   // weather
   if(sc.weather==='rain'){g.fillStyle='rgba(30,40,70,.18)';g.fillRect(0,0,W,H);g.strokeStyle='rgba(200,220,255,.55)';g.lineWidth=3;g.beginPath();for(let i=0;i<120;i++){const x=(hash(i,20)*W*1.2+lt*-200)%(W*1.2),y=(hash(i,21)*H+lt*1400)%H;g.moveTo(x,y);g.lineTo(x-12,y+46)}g.stroke()}
   if(sc.weather==='snow'){g.fillStyle='rgba(255,255,255,.85)';for(let i=0;i<90;i++){const x=(hash(i,22)*W+Math.sin(lt+i)*30)%W,y=(hash(i,23)*H+lt*120*(0.5+hash(i,24)))%H;circ(g,x,y,3+hash(i,25)*5);g.fill()}}
@@ -828,6 +900,9 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const LS='toonStudio.v2';
 const AUD={voice:null,music:null};
+const IMGS={};const FACES={};
+const LEARN_LS='toonStudio.learn';const getLearn=()=>{try{return localStorage.getItem(LEARN_LS)||''}catch(e){return ''}};const setLearn=v=>{try{localStorage.setItem(LEARN_LS,v)}catch(e){}};
+let RENDER_WAIT=null;
 const NATIVE=(()=>{try{return !!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())}catch(e){return false}})();
 const KEY_LS='toonStudio.key';const getKey=()=>{try{return localStorage.getItem(KEY_LS)||''}catch(e){return ''}};
 let EP=null, sample=null, downloads=null, tts=null;
@@ -870,6 +945,7 @@ function showTab(t){
   if(t==='scenes')renderScenes();
   if(t==='cast')renderCast();
   if(t==='upload')renderUpload();
+  if(t==='channel')renderChannelTab();
   scrollTo(0,0);
 }
 
@@ -883,10 +959,11 @@ function load(){let o=null;try{o=JSON.parse(localStorage.getItem(LS)||'null')}ca
 FIELDS.forEach(f=>$('#'+f)&&$('#'+f).addEventListener('change',save));
 
 function setEpisode(ep,isDemo){
-  ep.characters=(ep.characters||[]).map(c=>({id:String(c.id||'c'+Math.random().toString(36).slice(2,6)),name:c.name||c.id,role:c.role||'',look:normLook(c.look)}));
+  ep.characters=(ep.characters||[]).map(c=>({id:String(c.id||'c'+Math.random().toString(36).slice(2,6)),name:c.name||c.id,role:c.role||'',visual:c.visual||'',look:normLook(c.look)}));
+  ep.id=ep.id||('ep'+Date.now().toString(36)+Math.random().toString(36).slice(2,5));
   ep.scenes=(ep.scenes||[]).map(s=>normScene(s,ep.characters));
   ep.format=ep.format||$('#format').value;ep.youtube=ep.youtube||{};
-  EP=ep;EP.demo=!!isDemo;renderStory();save();if($('#voInfo'))renderAudio();
+  EP=ep;EP.demo=!!isDemo;Object.defineProperty(EP,'__imgs',{value:IMGS,enumerable:false,configurable:true});renderStory();save();if($('#voInfo'))renderAudio();loadEpisodeImages();
 }
 
 // ---------- presets ----------
@@ -914,18 +991,25 @@ Write ONE episode and storyboard it for our cartoon engine.
 SERIES: ${$('#series').value||'(invent a strong one)'}
 PREMISE: ${$('#premise').value||'(invent one)'}
 THIS EPISODE: ${$('#part').value||'Season 1, Part 1'}
-PREVIOUS PARTS: ${$('#prev').value||'None, this is the first part.'}
+PREVIOUS PARTS: ${$('#prev').value||'None, this is the first part.'}${getLearn()?`
+WHAT IS WORKING ON THIS CHANNEL (lessons from real YouTube stats; follow them): ${getLearn()}`:''}
 NARRATION: ${pov}, in ${$('#lang').value}${$('#lang').value==='Hinglish'?' (Hindi in Latin script mixed with English, the way Indian creators talk)':''}.
 TONE: ${$('#tone').value}
-LENGTH: about ${tg.sec}s total, ${tg.sc} scenes, each scene narration 6-16 words.
+LENGTH: about ${tg.sec}s total, ${tg.sc} scenes, each scene narration 8-22 words.
 
 EXISTING CHARACTERS (reuse these exact ids and looks; add new ones only if needed): ${existing.length?JSON.stringify(existing):'none yet'}
 ${$('#pov').value==='second'?'The viewer ("You") must be a character with id "you".':''}
 
-RETENTION RULES
-- Scene 1 is a HOOK under 12 words that creates an instant question or emotion. No intros.
-- Short punchy sentences. Something changes every scene. Strong emotional beats.
-- The last scene ends on a cliffhanger.
+WRITING STANDARD (this must feel like the best viral POV story series, not generic AI writing)
+- First, plan: what the hero wants, what stands in the way, a setup planted early that pays off later, one real twist, the emotional peak, and a cliffhanger that changes how we see the episode.
+- Scene 1 is a HOOK under 12 words that drops us mid-moment and raises a question. No intros, no "imagine", no "meet".
+- Present tense, conversational, like someone telling a friend. Short lines. Use one-word or three-word sentences for punch.
+- Be SPECIFIC and grounded: real names, small sensory details (the cracked second-hand boots, the 11pm bus, Mum's cold chai), exact numbers, real stakes.
+- Show emotion through actions and dialogue snippets ("Ben is crying before he goes."), never by naming feelings in a generic way.
+- Characters have their own motives. Someone surprises us. Earn the emotional moments.
+- BANNED clichés: "little did you know", "everything changed", "in that moment", "journey", "a rollercoaster", "you never expected", "it was then that".
+- Something new happens in EVERY scene. Vary rhythm: fast beats, then one slow emotional beat.
+- The last line is a cliffhanger that makes people comment and wait for the next part.
 
 STORYBOARD OPTIONS (use ONLY these exact values)
 bg: ${L('bg')}
@@ -947,9 +1031,13 @@ CHARACTER LOOK OPTIONS
   accessory: ${L('accessory')} | age: ${L('age')}
 Give characters distinct hair styles/colors so viewers can tell them apart.
 
+ILLUSTRATION FIELDS (for an AI image model that draws each scene)
+- Each character gets "visual": a precise, fixed description an illustrator can repeat exactly (age, build, face, hair style+color, skin tone, exact outfit with colors, accessories).
+- Each scene gets "imagePrompt": one vivid paragraph describing the single frame: who is in it (by name), what they are doing, facial expressions, body language, setting details, time of day, lighting, and camera (close-up / medium / wide / low angle / over-the-shoulder). Make frames cinematic and emotional. Never put words, captions, signs with text or logos in the image (a scoreboard number like "2 - 1" is fine).
+
 Return ONLY valid JSON, no markdown:
-{"title":"","logline":"","characters":[{"id":"","name":"","role":"","look":{"skin":"","hair":"","hairColor":"","outfit":"","top":"","bottom":"","accent":"","accessory":"","age":""}}],
-"scenes":[{"narration":"","bg":"","time":"","weather":"","shot":"","focus":"","music":"","sfx":"","fx":"","score":"","cast":[{"id":"","expr":"","pose":"","prop":"","emote":"","x":0.5,"facing":1}]}],
+{"title":"","logline":"","plan":{"want":"","obstacle":"","setup":"","payoff":"","twist":"","peak":"","cliffhanger":""},"characters":[{"id":"","name":"","role":"","visual":"","look":{"skin":"","hair":"","hairColor":"","outfit":"","top":"","bottom":"","accent":"","accessory":"","age":""}}],
+"scenes":[{"narration":"","imagePrompt":"","bg":"","time":"","weather":"","shot":"","focus":"","music":"","sfx":"","fx":"","score":"","cast":[{"id":"","expr":"","pose":"","prop":"","emote":"","x":0.5,"facing":1}]}],
 "summary":"3-4 sentences of everything that happened, for continuity","nextHook":"one sentence for the next part",
 "youtube":{"titles":["5 curiosity-driven titles under 60 chars incl. Part number"],"description":"2-3 lines + follow for next part + 3 hashtags","tags":["15 tags"],"thumbnailText":"max 4 words","thumbnailScene":0,"pinnedComment":"a question that makes people reply","bestTime":"best time to post and why, one line"}}`;
 }
@@ -1013,12 +1101,26 @@ function renderCast(){
   EP.characters.map((c,i)=>`<div class="card castc"><canvas width="240" height="320" data-cv="${i}"></canvas><div class="cbody">
     <div class="row"><div><label>Name</label><input data-ci="${i}" data-k="name" value="${esc(c.name)}"></div><div><label>ID</label><input value="${esc(c.id)}" disabled></div></div>
     <label>Role</label><input data-ci="${i}" data-k="role" value="${esc(c.role)}">
+    <div class="photorow"><label class="btn sm fileb">📷 Autofill from photo<input type="file" accept="image/*" data-photo="${i}"></label>
+      <button class="btn ghost sm" data-pickopen="${i}" style="display:none">👆 Tap to pick colours</button></div>
+    <div class="status" id="phs${i}"></div>
+    <div class="picker" id="pk${i}" style="display:none">
+      <div class="hint" id="pkh${i}">Tap the <b>hair</b> in the photo</div>
+      <canvas data-pc="${i}" class="pcv"></canvas>
+      <div class="bar">${[['hairColor','Hair'],['skin','Skin'],['top','Top'],['bottom','Bottom'],['accent','Accent']].map(([k,l])=>`<button class="btn ghost sm" data-pt="${i}:${k}">${l}</button>`).join('')}<button class="btn sm" data-pkdone="${i}">Done</button></div>
+    </div>
+    ${c.visual?`<details class="tips"><summary>Illustration description</summary><textarea class="ipr" data-ci="${i}" data-k="visual">${esc(c.visual)}</textarea></details>`:''}
     <div class="grid3">${Object.keys(lab).map(k=>`<div><label>${lab[k]}</label><select data-ci="${i}" data-lk="${k}">${opt(ENUM[k==='top'||k==='bottom'||k==='accent'?'color':k],c.look[k])}</select></div>`).join('')}</div>
     <button class="btn ghost sm" data-del="${i}" style="margin-top:10px">Remove</button></div></div>`).join('')+
   `<button class="btn big ghost" id="addChar">+ Add character</button>`;
   box.querySelectorAll('canvas[data-cv]').forEach(cv=>charPreview(cv,EP.characters[cv.dataset.cv]));
   box.querySelectorAll('[data-ci]').forEach(el=>el.oninput=el.onchange=()=>{const c=EP.characters[el.dataset.ci];if(el.dataset.k)c[el.dataset.k]=el.value;else c.look[el.dataset.lk]=el.value;charPreview(box.querySelector(`canvas[data-cv="${el.dataset.ci}"]`),c);save()});
   box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{const c=EP.characters[b.dataset.del];EP.characters.splice(b.dataset.del,1);EP.scenes.forEach(s=>s.cast=s.cast.filter(x=>x.id!==c.id));save();renderCast()});
+  box.querySelectorAll('[data-photo]').forEach(inp=>inp.onchange=()=>{const f=inp.files[0];inp.value='';if(f)photoAutofill(+inp.dataset.photo,f)});
+  box.querySelectorAll('[data-pickopen]').forEach(b=>b.onclick=()=>openPicker(+b.dataset.pickopen));
+  box.querySelectorAll('[data-pt]').forEach(b=>b.onclick=()=>{const[i,k]=b.dataset.pt.split(':');setPickTarget(+i,k)});
+  box.querySelectorAll('[data-pkdone]').forEach(b=>b.onclick=()=>{$('#pk'+b.dataset.pkdone).style.display='none';renderCast()});
+  EP.characters.forEach((c,i)=>{if(FACES[c.id]){const pb=box.querySelector(`[data-pickopen="${i}"]`);if(pb)pb.style.display=''}});
   $('#addChar').onclick=()=>{const id='c'+(EP.characters.length+1)+Math.random().toString(36).slice(2,4);EP.characters.push({id,name:'New character',role:'',look:normLook({hair:ENUM.hair[Math.floor(Math.random()*9)],top:ENUM.color[Math.floor(Math.random()*18)]})});save();renderCast()};
 }
 
@@ -1033,7 +1135,11 @@ function renderScenes(){
   box.innerHTML=`<div class="card"><h2>Scenes</h2><p class="hint">Everything is editable: the words, the place, the camera, every character's face and pose. Previews update instantly.</p></div>`+
   EP.scenes.map((s,i)=>`<div class="scene"><div class="top">
     <canvas data-sp="${i}" width="${land?320:180}" height="${land?180:320}" class="sp"></canvas>
-    <div class="body"><div class="n">SCENE ${i+1}</div><textarea data-s="${i}" data-k="narration">${esc(s.narration)}</textarea>
+    <div class="body"><div class="n">SCENE ${i+1}${s.imgKey&&IMGS[s.imgKey]?' · 🎨 ILLUSTRATED':''}</div><textarea data-s="${i}" data-k="narration">${esc(s.narration)}</textarea>
+    <div class="artrow"><button class="btn ghost sm" data-redo="${i}">🎨 ${s.imgKey&&IMGS[s.imgKey]?'Redo':'Make'} image</button>
+      <label class="btn ghost sm fileb">📁 My image<input type="file" accept="image/*" data-own="${i}"></label>
+      ${s.imgKey&&IMGS[s.imgKey]?`<button class="btn ghost sm" data-clr="${i}">✕ Use cartoon</button>`:''}</div>
+    <details class="tips"><summary>Image description</summary><textarea class="ipr" data-s="${i}" data-k="imagePrompt" placeholder="Describe the picture for this scene">${esc(s.imagePrompt||'')}</textarea></details>
     <div class="grid3">
       <div><label>Place</label><select data-s="${i}" data-k="bg">${opt(ENUM.bg,s.bg)}</select></div>
       <div><label>Time</label><select data-s="${i}" data-k="time">${opt(ENUM.time,s.time)}</select></div>
@@ -1062,6 +1168,9 @@ function renderScenes(){
     EP.scenes[el.dataset.s]=normScene(s,EP.characters);scenePreview(+el.dataset.s);save();
     if(k==='bg'||(k==='id'&&el.tagName==='SELECT'))renderScenes();
   }});
+  box.querySelectorAll('[data-redo]').forEach(b=>b.onclick=()=>illustrate([+b.dataset.redo]));
+  box.querySelectorAll('[data-own]').forEach(inp=>inp.onchange=async()=>{const f=inp.files[0];if(f){await setSceneImage(+inp.dataset.own,f);renderScenes()}});
+  box.querySelectorAll('[data-clr]').forEach(b=>b.onclick=()=>{const sc=EP.scenes[+b.dataset.clr];delete IMGS[sc.imgKey];idbPut(sc.imgKey,null);delete sc.imgKey;save();renderScenes()});
   const act=(attr,fn)=>box.querySelectorAll(`[data-${attr}]`).forEach(b=>b.onclick=()=>{fn(b.dataset[attr]);save();renderScenes()});
   act('flip',v=>{const[i,j]=v.split(':');const c=EP.scenes[i].cast[j];c.facing=-c.facing});
   act('rmc',v=>{const[i,j]=v.split(':');EP.scenes[i].cast.splice(j,1);EP.scenes[i]=normScene(EP.scenes[i],EP.characters)});
@@ -1154,6 +1263,7 @@ async function run(record){
   RUN={stop:end};requestAnimationFrame(loop);
 }
 async function finish(blob){
+  if(RENDER_WAIT){const f=RENDER_WAIT;RENDER_WAIT=null;f(blob)}
   const st=$('#renderStatus'),ext=blob.type.includes('mp4')?'mp4':'webm',url=URL.createObjectURL(blob),mb=(blob.size/1048576).toFixed(1);
   const name=([$('#part').value,EP.title].filter(Boolean).join(' ').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'-').slice(0,80)||'toon-video')+'.'+ext;
   $('#outVid').innerHTML=`<video src="${url}" controls playsinline></video><button class="btn big" id="dlBtn">⬇ Save video (${mb} MB · .${ext})</button>`;
@@ -1325,8 +1435,10 @@ $('#aiGen').onclick=genNarration;
 // one-tap: voice + render
 $('#autoBtn').onclick=async()=>{
   const st=$('#renderStatus');st.className='status';
+  const missing=EP.scenes.some(sc=>!(sc.imgKey&&IMGS[sc.imgKey]));
+  if(missing&&$('#artSrc').value!=='cartoon'){st.textContent='Step 1/3: illustrating scenes (see the Scenes tab)…';const ok=await illustrate();if(!ok){st.className='status err';st.textContent='Illustrations failed (see the Scenes tab). Continuing with cartoon art…';await sleep(1800);st.className='status'}}
   const hasAi=AUD.voice&&/^AI narrator/.test(AUD.voice.name)&&EP.syncFor===AUD.voice.name;
-  if(!hasAi){st.textContent='Step 1/2: making the voiceover…';document.querySelector('.voicebox').scrollIntoView({behavior:'smooth',block:'center'});
+  if(!hasAi){st.textContent='Making the voiceover…';document.querySelector('.voicebox').scrollIntoView({behavior:'smooth',block:'center'});
     const ok=await genNarration();
     if(!ok){st.className='status err';st.textContent=inClaude()?"The AI voice can't run inside claude.ai (see the Audio section). Rendering without the voice instead…":"Voice failed. Rendering without it…";await new Promise(r=>setTimeout(r,1800))}}
   $('#cv').scrollIntoView({behavior:'smooth',block:'center'});st.className='status';run(true);
@@ -1366,7 +1478,7 @@ $('#keySave').onclick=async()=>{const k=$('#apiKey').value.trim(),st=$('#keyStat
   catch(e){st.className='status err';st.textContent='❌ '+e.message}};
 $('#keyDel').onclick=()=>{try{localStorage.removeItem(KEY_LS)}catch(e){}$('#apiKey').placeholder='sk-ant-…';$('#keyStatus').textContent='Key removed.'};
 // ---------- native (Android app) saving: share sheet ----------
-function blobToB64(blob){return new Promise((res,rej)=>{const f=new FileReader();f.onload=()=>res(String(f.result).split(',')[1]);f.onerror=()=>rej(f.error);f.readAsDataURL(blob)})}
+function blobToB64(blob){return new Promise((res,rej)=>{const f=new FileReader();f.onload=()=>{const r=String(f.result),k=r.indexOf(';base64,');res(k>=0?r.slice(k+8):r.slice(r.indexOf(',')+1))};f.onerror=()=>rej(f.error);f.readAsDataURL(blob)})}
 async function nativeSave(name,data,st){
   const P=Capacitor.Plugins,blob=data instanceof Blob?data:new Blob([data]);
   st.className='status';st.textContent='Preparing file…';
@@ -1376,6 +1488,275 @@ async function nativeSave(name,data,st){
   try{await P.Share.share({title:name,files:[r.uri],dialogTitle:'Save or upload'})}catch(e){}
   st.textContent='✅ Ready. Choose YouTube to upload, or Files/Drive to keep it.'+where;
 }
+
+// ---------- AI illustrations ----------
+const ART_LS='toonStudio.art';
+function artCfg(){try{return JSON.parse(localStorage.getItem(ART_LS)||'{}')}catch(e){return{}}}
+function setArtCfg(o){try{localStorage.setItem(ART_LS,JSON.stringify({...artCfg(),...o}))}catch(e){}}
+const ART_STYLE='Polished anime-inspired cartoon illustration for a viral animated story reel. Clean confident line art, soft cel shading with gentle gradients, warm slightly muted colour palette, cute expressive characters with large heads and big eyes (closed-eye smiles when happy, visible tears when crying), detailed believable backgrounds, soft cinematic lighting, shallow depth of field, emotional storytelling composition. No text, no captions, no speech bubbles, no watermark, no logos.';
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function looksText(c){const l=c.look;return `${l.age==='old'?'older':l.age} ${c.role?'('+c.role+') ':''}with ${l.hairColor} ${l.hair} hair, ${l.skin} skin, wearing a ${l.top} ${l.outfit} and ${l.bottom} bottoms${l.accessory!=='none'?', '+l.accessory:''}`}
+function castText(ids){return EP.characters.filter(c=>!ids||ids.includes(c.id)).map(c=>`${c.name}: ${c.visual||looksText(c)}`).join(' | ')}
+function scenePrompt(i){const s=EP.scenes[i],ids=s.cast.map(c=>c.id);
+  return `${ART_STYLE} Format: ${isLand()?'horizontal 16:9 widescreen':'vertical 9:16 phone screen'} frame. Characters in this frame (draw them exactly like this): ${castText(ids.length?ids:null)}. Scene: ${s.imagePrompt||s.narration}`}
+function sheetPrompt(){return `${ART_STYLE} Character reference sheet on a plain light background: ${EP.characters.map(c=>c.name).join(', ')} standing side by side, full body, front view, evenly spaced, each clearly separated. ${castText()}. No text or name labels.`}
+function b64ToBlob(b64,type){const bin=atob(b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type})}
+async function blobB64(blob){return blobToB64(blob)}
+async function geminiImage(prompt,refBlob,aspect){
+  const c=artCfg(),model=(c.gmodel||'gemini-2.5-flash-image').trim();if(!c.gkey)throw new Error('Add your Google AI Studio key first');
+  const parts=[{text:prompt}];for(const rb of (Array.isArray(refBlob)?refBlob:refBlob?[refBlob]:[]))parts.push({inline_data:{mime_type:rb.type||'image/jpeg',data:await blobB64(rb)}});
+  for(let attempt=0;attempt<3;attempt++){
+    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(c.gkey)}`,{method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify({contents:[{role:'user',parts}],generationConfig:{responseModalities:['IMAGE','TEXT'],imageConfig:{aspectRatio:aspect||(isLand()?'16:9':'9:16')}}})});
+    if(r.status===429||r.status===503){await sleep(7000*(attempt+1));continue}
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok){const m=(j.error&&j.error.message)||('error '+r.status);throw new Error(r.status===400&&/API key/i.test(m)?'Google rejected the key. Check it.':/billing|quota|free tier/i.test(m)?'Gemini says: '+m+' (you may need to turn on billing in AI Studio)':m)}
+    const cand=j.candidates&&j.candidates[0],ps=(cand&&cand.content&&cand.content.parts)||[];
+    const p=ps.find(x=>x.inlineData||x.inline_data);
+    if(!p){if(attempt<2)continue;throw new Error(j.promptFeedback&&j.promptFeedback.blockReason?'Gemini blocked this picture ('+j.promptFeedback.blockReason+'). Edit the image description.':'Gemini returned no image. Try again.')}
+    const d=p.inlineData||p.inline_data;return b64ToBlob(d.data,d.mimeType||d.mime_type||'image/png');
+  }
+  throw new Error('Gemini is busy (rate limit). Wait a minute and try again.');
+}
+async function freeImage(prompt,seed){
+  const[w,h]=isLand()?[1280,720]:[720,1280];
+  const url=`https://image.pollinations.ai/prompt/${encodeURIComponent(prompt.slice(0,1500))}?width=${w}&height=${h}&seed=${seed}&model=flux&nologo=true&referrer=toonstudio`;
+  for(let a=0;a<4;a++){
+    let r;try{r=await fetch(url)}catch(e){if(a<3){await sleep(8000);continue}throw new Error('Free image service unreachable. Check your internet.')}
+    if(r.ok&&/image/.test(r.headers.get('content-type')||''))return await r.blob();
+    if(r.status===429||r.status>=500){await sleep(16000);continue}
+    throw new Error('Free image service error '+r.status);
+  }
+  throw new Error('Free image service is busy. Try again in a few minutes.');
+}
+async function toBitmap(blob){try{return await createImageBitmap(blob)}catch(e){return await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=()=>rej(new Error('bad image'));im.src=URL.createObjectURL(blob)})}}
+async function setSceneImage(i,blob){
+  const sc=EP.scenes[i];if(!sc)return;sc.imgKey=`img:${EP.id}:${Date.now().toString(36)}${i}`;
+  IMGS[sc.imgKey]=await toBitmap(blob);idbPut(sc.imgKey,blob);save();scenePreview(i);
+}
+async function loadEpisodeImages(){
+  if(!EP)return;const ep=EP;
+  for(let i=0;i<ep.scenes.length;i++){const k=ep.scenes[i].imgKey;if(k&&!IMGS[k]){const b=await idbGet(k);if(b&&EP===ep){try{IMGS[k]=await toBitmap(b)}catch(e){}}}}
+  if(EP===ep){if($('#s-scenes').classList.contains('on'))renderScenes();drawAt(1)}
+  const sh=ep.id&&await idbGet('sheet:'+ep.id);if(sh&&EP===ep)showSheet(sh);
+}
+function showSheet(blob){$('#sheetImg').src=URL.createObjectURL(blob);$('#sheetBox').style.display=''}
+function illMsg(t,err){const e=$('#illStatus');e.className='status'+(err?' err':'');e.innerHTML=t}
+let ILL_BUSY=false;
+async function illustrate(only){
+  if(!EP||ILL_BUSY)return false;const src=$('#artSrc').value;
+  if(src==='cartoon'){illMsg('Pick Gemini or Free illustrations above first.',true);return false}
+  if(src==='gemini'&&!artCfg().gkey){illMsg('Paste your Google AI Studio key above and tap Save key.',true);$('#gemKey').focus();return false}
+  ILL_BUSY=true;$('#illBtn').disabled=true;$('#illProgWrap').style.display='';
+  const list=only||EP.scenes.map((s,i)=>i).filter(i=>!(EP.scenes[i].imgKey&&IMGS[EP.scenes[i].imgKey]));
+  EP.seed=EP.seed||Math.floor(Math.random()*1e6);let done=0;const t0=performance.now();
+  try{
+    let ref=null;
+    if(src==='gemini'){ref=await idbGet('sheet:'+EP.id);
+      if(!ref){illMsg('🎨 Drawing the character reference sheet…');await loadFaces();
+        const withPh=EP.characters.filter(c=>FACES[c.id]).slice(0,4),phs=[];for(const c of withPh)phs.push(await downscale(FACES[c.id],768));
+        ref=await geminiImage(sheetPrompt()+(withPh.length?` Base the faces, hair and skin of ${withPh.map((c,k)=>c.name+' on attached photo '+(k+1)).join(', ')}, redrawn fully in this cartoon style (not photorealistic).`:''),phs,'16:9');idbPut('sheet:'+EP.id,ref);showSheet(ref)}}
+    for(const i of list){
+      illMsg(`🎨 Illustrating scene ${i+1}… (${done+1} of ${list.length}) <span style="opacity:.6">${Math.round((performance.now()-t0)/1000)}s</span>`);
+      $('#illProg').style.width=(100*done/list.length)+'%';
+      const blob=src==='gemini'?await geminiImage(scenePrompt(i)+' Draw the characters exactly as they appear in the attached character reference sheet: same faces, hair, skin and outfits.',ref):await freeImage(scenePrompt(i),EP.seed);
+      await setSceneImage(i,blob);done++;
+      if(src==='free'&&done<list.length){illMsg(`✅ Scene ${i+1} done. The free service needs a short pause between pictures…`);await sleep(15500)}
+    }
+    $('#illProg').style.width='100%';illMsg(`✅ ${done} scene${done===1?'':'s'} illustrated. Watch it in the Video tab.`);
+    renderScenes();return true;
+  }catch(e){illMsg('❌ '+(/Failed to fetch|NetworkError|Load failed/i.test(e.message||'')?"Couldn't reach the image service. Check your internet connection.":(e.message||e))+(inClaude()?'<br>AI illustrations work in the Toon Studio Android app or app file, not inside claude.ai.':''),true);renderScenes();return false}
+  finally{ILL_BUSY=false;$('#illBtn').disabled=false}
+}
+$('#illBtn').onclick=()=>illustrate();
+function syncArtUI(){$('#gemBox').style.display=$('#artSrc').value==='gemini'?'':'none';$('#illBtn').style.display=$('#artSrc').value==='cartoon'?'none':''}
+$('#artSrc').onchange=()=>{setArtCfg({src:$('#artSrc').value});syncArtUI()};
+$('#gemSave').onclick=()=>{const k=$('#gemKey').value.trim();if(!k){illMsg('Paste the key first.',true);return}setArtCfg({gkey:k});$('#gemKey').value='';$('#gemKey').placeholder='Key saved ••••'+k.slice(-4);illMsg('✅ Key saved. Tap Illustrate all scenes.')};
+$('#gemModel').onchange=()=>setArtCfg({gmodel:$('#gemModel').value.trim()});
+(()=>{const c=artCfg();if(c.src)$('#artSrc').value=c.src;if(c.gkey)$('#gemKey').placeholder='Key saved ••••'+c.gkey.slice(-4);if(c.gmodel)$('#gemModel').value=c.gmodel;syncArtUI()})();
+
+// ---------- photo → character autofill ----------
+const PICK={};const PICK_ORDER=['hairColor','skin','top','bottom','accent'];
+const PICK_LABEL={hairColor:'hair',skin:'skin (cheek or forehead)',top:'top / shirt',bottom:'trousers / skirt',accent:'detail colour (stripe, scarf, tie)'};
+function hexRgb(h){const n=parseInt(h.slice(1),16);return[n>>16,n>>8&255,n&255]}
+function nearest(rgb,table){let best=null,bd=1e9;for(const[k,h]of Object.entries(table)){const c=hexRgb(h);const d=2*(c[0]-rgb[0])**2+4*(c[1]-rgb[1])**2+3*(c[2]-rgb[2])**2;if(d<bd){bd=d;best=k}}return best}
+async function downscale(blob,max=640){const bm=await toBitmap(blob);const k=Math.min(1,max/Math.max(bm.width,bm.height));const c=document.createElement('canvas');c.width=Math.round(bm.width*k);c.height=Math.round(bm.height*k);c.getContext('2d').drawImage(bm,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(r,'image/jpeg',.85))}
+function photoPrompt(){const L=k=>ENUM[k].join('|');return `Look at the main person in this photo. Describe how to draw them as a cute cartoon character. Do NOT try to identify who they are; only describe visible appearance.
+Return ONLY JSON:
+{"look":{"skin":"${L('skin')}","hair":"${L('hair')}","hairColor":"${L('hairColor')}","outfit":"${L('outfit')}","top":"${L('color')}","bottom":"${L('color')}","accent":"${L('color')}","accessory":"${L('accessory')}","age":"${L('age')}"},
+"visual":"one detailed sentence an illustrator can repeat exactly: apparent age, build, face shape, hair style and exact colour, skin tone, facial hair, glasses, exact outfit with colours"}
+Pick the single closest option for every look field.`}
+function parseJ(v){if(typeof v!=='string')return v;const m=v.match(/\{[\s\S]*\}/);return JSON.parse(m?m[0]:v)}
+async function aiDescribePhoto(blob){
+  const small=await downscale(blob,640),b64=await blobToB64(small);
+  if(sample){try{const lim=sample.limits?await sample.limits():null;if(lim&&lim.images)return parseJ(await sample.json(photoPrompt(),{images:[small]}))}catch(e){if(e&&e.code==='not_granted')throw new Error('AI access was declined')}}
+  if(getKey())return parseJ(await anthropicCall([{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:photoPrompt()}],null,900));
+  const g=artCfg().gkey;
+  if(g){const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(g)}`,{method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({contents:[{role:'user',parts:[{inline_data:{mime_type:'image/jpeg',data:b64}},{text:photoPrompt()}]}],generationConfig:{responseMimeType:'application/json'}})});
+    const j=await r.json();if(!r.ok)throw new Error((j.error&&j.error.message)||'Gemini error '+r.status);
+    return parseJ(((j.candidates||[])[0]||{}).content.parts.map(p=>p.text||'').join(''))}
+  return null;
+}
+async function photoAutofill(i,file){
+  const c=EP.characters[i],st=$('#phs'+i);st.className='status';
+  FACES[c.id]=file;idbPut('face:'+c.id,file);if(EP.id)idbPut('sheet:'+EP.id,null);
+  st.innerHTML='<span class="spin"></span> Reading the photo…';
+  try{
+    const res=await aiDescribePhoto(file);
+    if(res&&res.look){c.look=normLook({...c.look,...res.look});if(res.visual)c.visual=String(res.visual);save();renderCast();
+      $('#phs'+i).textContent='✨ Filled from the photo. Fix anything below, or tap 👆 to fine-tune colours.';
+      charPreview(document.querySelector(`canvas[data-cv="${i}"]`),c);return}
+    renderCast();$('#phs'+i).textContent='No AI connected here, so tap to pick the colours from the photo.';openPicker(i);
+  }catch(e){renderCast();const s2=$('#phs'+i);s2.className='status err';s2.textContent='AI couldn\'t read it ('+(e.message||e)+'). Tap to pick colours instead.';openPicker(i)}
+}
+async function openPicker(i){
+  const c=EP.characters[i];let blob=FACES[c.id]||await idbGet('face:'+c.id);if(!blob)return;FACES[c.id]=blob;
+  const bm=await toBitmap(blob),cv=document.querySelector(`canvas[data-pc="${i}"]`);const k=Math.min(1,900/Math.max(bm.width,bm.height));
+  cv.width=Math.round(bm.width*k);cv.height=Math.round(bm.height*k);const g=cv.getContext('2d',{willReadFrequently:true});g.drawImage(bm,0,0,cv.width,cv.height);
+  $('#pk'+i).style.display='';setPickTarget(i,'hairColor');
+  cv.onclick=e=>{const r=cv.getBoundingClientRect(),x=Math.round((e.clientX-r.left)*cv.width/r.width),y=Math.round((e.clientY-r.top)*cv.height/r.height);
+    const R=Math.max(3,Math.round(cv.width/80)),d=g.getImageData(Math.max(0,x-R),Math.max(0,y-R),R*2,R*2).data;let rr2=0,gg=0,bb=0,n=0;for(let q=0;q<d.length;q+=4){rr2+=d[q];gg+=d[q+1];bb+=d[q+2];n++}
+    const rgb=[rr2/n,gg/n,bb/n],tgt=PICK[i]||'hairColor';
+    const val=nearest(rgb,tgt==='skin'?SKIN:tgt==='hairColor'?HAIRC:PAL);c.look[tgt]=val;save();
+    const sel=document.querySelector(`select[data-ci="${i}"][data-lk="${tgt}"]`);if(sel)sel.value=val;
+    charPreview(document.querySelector(`canvas[data-cv="${i}"]`),c);toast(`${PICK_LABEL[tgt].split(' ')[0]} → ${val}`);
+    g.strokeStyle='#fff';g.lineWidth=3;g.beginPath();g.arc(x,y,R+4,0,Math.PI*2);g.stroke();
+    const nx=PICK_ORDER[PICK_ORDER.indexOf(tgt)+1];if(nx)setPickTarget(i,nx);else $('#pkh'+i).innerHTML='✅ All set. Tap any button to redo one, or Done.'};
+}
+function setPickTarget(i,k){PICK[i]=k;const h=$('#pkh'+i);if(h)h.innerHTML=`Tap the <b>${PICK_LABEL[k]}</b> in the photo`;document.querySelectorAll(`[data-pt^="${i}:"]`).forEach(b=>b.classList.toggle('on',b.dataset.pt===i+':'+k))}
+async function loadFaces(){if(!EP)return;for(const c of EP.characters){if(!FACES[c.id]){const b=await idbGet('face:'+c.id);if(b)FACES[c.id]=b}}}
+
+// ---------- 📈 channel stats ----------
+const CH_LS='toonStudio.channel',SNAP_LS='toonStudio.snaps';
+function chCfg(){try{return JSON.parse(localStorage.getItem(CH_LS)||'{}')}catch(e){return{}}}
+function setChCfg(o){try{localStorage.setItem(CH_LS,JSON.stringify({...chCfg(),...o}))}catch(e){}}
+function snaps(){try{return JSON.parse(localStorage.getItem(SNAP_LS)||'[]')}catch(e){return[]}}
+const fmtN=n=>n>=1e6?(n/1e6).toFixed(n>=1e7?0:1)+'M':n>=1e3?(n/1e3).toFixed(n>=1e4?0:1)+'K':String(Math.round(n||0));
+const MILESTONES=[100,500,1000,5000,10000,50000,100000,500000,1000000];
+let CHN=null;
+function chParam(c){c=String(c||'').trim();let m=c.match(/channel\/(UC[\w-]{22})/)||c.match(/^(UC[\w-]{22})$/);if(m)return{id:m[1]};m=c.match(/@([\w.\-]+)/);return{forHandle:'@'+(m?m[1]:c.replace(/^@/,''))}}
+async function yt(ep,params,key){const u=new URL('https://www.googleapis.com/youtube/v3/'+ep);Object.entries({...params,key}).forEach(([k,v])=>u.searchParams.set(k,v));
+  const r=await fetch(u);const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error((j.error&&j.error.message)||('YouTube error '+r.status));return j}
+async function fetchChannel(chan,key){
+  const c=await yt('channels',{part:'snippet,statistics,contentDetails',...chParam(chan)},key);
+  const ch=(c.items||[])[0];if(!ch)throw new Error('Channel not found. Use your @handle exactly as on YouTube.');
+  const up=ch.contentDetails.relatedPlaylists.uploads;
+  const pl=await yt('playlistItems',{part:'contentDetails',playlistId:up,maxResults:50},key);
+  const ids=(pl.items||[]).map(i=>i.contentDetails.videoId);let vids=[];
+  if(ids.length){const v=await yt('videos',{part:'snippet,statistics,contentDetails',id:ids.join(',')},key);
+    vids=(v.items||[]).map(x=>({id:x.id,title:x.snippet.title,published:x.snippet.publishedAt,thumb:(x.snippet.thumbnails.medium||x.snippet.thumbnails.default||{}).url,
+      views:+x.statistics.viewCount||0,likes:+x.statistics.likeCount||0,comments:+x.statistics.commentCount||0,dur:x.contentDetails.duration}))}
+  vids.sort((a,b)=>b.published.localeCompare(a.published));
+  return{id:ch.id,title:ch.snippet.title,subs:+ch.statistics.subscriberCount||0,views:+ch.statistics.viewCount||0,count:+ch.statistics.videoCount||0,hidden:ch.statistics.hiddenSubscriberCount,videos:vids,ts:Date.now()};
+}
+async function fetchComments(vids,key){const out=[];for(const v of vids.slice(0,3)){try{const j=await yt('commentThreads',{part:'snippet',videoId:v.id,maxResults:15,order:'relevance',textFormat:'plainText'},key);
+  (j.items||[]).forEach(it=>{const c=it.snippet.topLevelComment.snippet;out.push({video:v.title,text:c.textDisplay,likes:c.likeCount||0})})}catch(e){}}return out}
+function analyse(ch){
+  const sn=snaps(),last=sn[sn.length-1]||null,day=sn.slice().reverse().find(x=>ch.ts-x.ts>=20*3600e3)||sn[0]||null;
+  const lastMap=last?last.v:{},dayMap=day?day.v:{};const alerts=[];
+  const now=Date.now();
+  ch.videos.forEach(v=>{v.age=Math.max(1,(now-Date.parse(v.published))/3600e3);v.vph=v.views/v.age;v.dLast=lastMap[v.id]!=null?v.views-lastMap[v.id]:null;v.dDay=dayMap[v.id]!=null?v.views-dayMap[v.id]:null;
+    v.likeRate=v.views?v.likes/v.views:0;
+    if(last&&lastMap[v.id]!=null){const m=MILESTONES.filter(x=>lastMap[v.id]<x&&v.views>=x).pop();if(m)alerts.push({hot:0,t:`🎉 "${v.title}" just passed ${fmtN(m)} views!`})}});
+  const rates=ch.videos.map(v=>v.dLast!=null&&last?v.dLast/Math.max(.5,(ch.ts-last.ts)/3600e3):v.vph).sort((a,b)=>a-b);const med=rates[Math.floor(rates.length/2)]||0;
+  ch.videos.forEach(v=>{const r=v.dLast!=null&&last?v.dLast/Math.max(.5,(ch.ts-last.ts)/3600e3):v.vph;v.rate=r;v.hot=ch.videos.length>2&&r>Math.max(3*med,2)});
+  ch.videos.filter(v=>v.hot).slice(0,3).forEach(v=>alerts.unshift({hot:1,t:`🔥 "${v.title}" is taking off (${fmtN(v.rate)} views/hour). Post the next part soon!`}));
+  if(last&&ch.subs>last.subs){const m=MILESTONES.filter(x=>last.subs<x&&ch.subs>=x).pop();if(m)alerts.unshift({hot:1,t:`🏆 You passed ${fmtN(m)} subscribers!`})}
+  const best=ch.videos.slice().sort((a,b)=>b.views-a.views)[0];if(best)best.best=1;
+  return{alerts,last,day};
+}
+function saveSnap(ch){const sn=snaps();const v={};ch.videos.forEach(x=>v[x.id]=x.views);sn.push({ts:ch.ts,subs:ch.subs,views:ch.views,v});while(sn.length>60)sn.shift();try{localStorage.setItem(SNAP_LS,JSON.stringify(sn))}catch(e){}}
+function chMsg(t,err){const e=$('#chStatus');e.className='status'+(err?' err':'');e.innerHTML=t}
+async function loadChannel(){
+  const chan=$('#chId').value.trim()||chCfg().chan,key=$('#ytKey').value.trim()||chCfg().key;
+  if(!chan||!key){chMsg('Add your channel @handle and a YouTube API key (two buttons above).',true);return}
+  setChCfg({chan,key});$('#ytKey').value='';$('#ytKey').placeholder='Key saved ••••'+key.slice(-4);
+  chMsg('<span class="spin"></span> Loading your channel…');
+  try{const ch=await fetchChannel(chan,key);const a=analyse(ch);ch.comments=await fetchComments(ch.videos,key);CHN=ch;saveSnap(ch);drawChannel(ch,a);
+    chMsg(`Updated ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`+(a.last?` · compared with ${timeAgo(a.last.ts)}`:' · first check, so growth shows next time'));
+    if(NATIVE&&a.alerts.length)toast(a.alerts[0].t.slice(0,60));
+  }catch(e){chMsg('❌ '+(/Failed to fetch|NetworkError/i.test(e.message)?(inClaude()?'Channel stats work in the Toon Studio app, not inside claude.ai.':'No internet connection.'):e.message),true)}
+}
+function timeAgo(ts){const h=(Date.now()-ts)/3600e3;return h<1?Math.round(h*60)+' min ago':h<48?Math.round(h)+' h ago':Math.round(h/24)+' days ago'}
+function drawChannel(ch,a){
+  const dSubs=a.last?ch.subs-a.last.subs:null,dViews=a.day?ch.views-a.day.views:null;
+  const delta=d=>d==null?'':`<i>${d>=0?'+':''}${fmtN(d)}</i>`;
+  $('#chOut').innerHTML=`<div class="card"><h2>${esc(ch.title)}</h2>
+    <div class="tiles"><div class="tile"><b>${ch.hidden?'hidden':fmtN(ch.subs)}</b><span>Subscribers</span> ${delta(dSubs)}</div>
+    <div class="tile"><b>${fmtN(ch.views)}</b><span>Total views</span> ${delta(dViews)}${a.day?'<span> 24h</span>':''}</div>
+    <div class="tile"><b>${ch.count}</b><span>Videos</span></div></div>
+    ${a.alerts.map(x=>`<div class="alert ${x.hot?'hot':''}">${esc(x.t)}</div>`).join('')}
+    <canvas id="chChart" width="700" height="170"></canvas><div class="hint">Views of your latest ${Math.min(15,ch.videos.length)} videos (newest on the right)</div></div>
+  <div class="card"><h2>Videos</h2>${ch.videos.slice(0,25).map(v=>`<div class="vrow">${v.thumb?`<img src="${esc(v.thumb)}" alt="">`:''}<div style="flex:1;min-width:0">
+    <div class="vt">${v.hot?'<span class="badge">🔥 TRENDING</span>':''}${v.best?'<span class="badge">🏆 BEST</span>':''}${esc(v.title)}</div>
+    <div class="vm">👁 ${fmtN(v.views)} ${v.dLast?`<span class="up">+${fmtN(v.dLast)}</span>`:''} · 👍 ${fmtN(v.likes)} (${(v.likeRate*100).toFixed(1)}%) · 💬 ${fmtN(v.comments)} · ${timeAgo(Date.parse(v.published))}</div>
+    <div class="bar" style="margin-top:6px"><button class="btn ghost sm" data-sequel="${esc(v.id)}">➡ Make the next part of this</button></div></div></div>`).join('')}</div>
+  <div class="card"><h2>💬 What viewers are saying</h2>${ch.comments.length?ch.comments.slice(0,12).map(c=>`<div class="cmt">${esc(c.text.slice(0,240))}<br><small>👍 ${c.likes} · ${esc(c.video.slice(0,50))}</small></div>`).join(''):'<p class="hint">No comments yet.</p>'}</div>`;
+  const cv=$('#chChart'),g=cv.getContext('2d'),vs=ch.videos.slice(0,15).reverse(),W=cv.width,H=cv.height,mx=Math.max(1,...vs.map(v=>v.views));
+  g.clearRect(0,0,W,H);const bw=W/Math.max(1,vs.length);vs.forEach((v,i)=>{const h=(H-24)*v.views/mx;g.fillStyle=v.hot?'#ff9a4d':v.best?'#ffc94d':'#7b6cff';g.beginPath();g.roundRect?g.roundRect(i*bw+4,H-18-h,bw-8,h,6):g.rect(i*bw+4,H-18-h,bw-8,h);g.fill();g.fillStyle='#a59cb8';g.font='12px Inter';g.textAlign='center';g.fillText(fmtN(v.views),i*bw+bw/2,H-4)});
+  $('#chOut').querySelectorAll('[data-sequel]').forEach(b=>b.onclick=()=>{const v=CHN.videos.find(x=>x.id===b.dataset.sequel);$('#prev').value=($('#prev').value?$('#prev').value+'\n\n':'')+`Viewers loved the video "${v.title}" (${fmtN(v.views)} views). Continue that storyline and deliver what fans want next.`;save();showTab('story');toast('Set up. Tap ✨ Write to make the next part')});
+}
+$('#chLoad').onclick=loadChannel;
+// learnings
+$('#learnBtn').onclick=async()=>{
+  const st=$('#learnStatus');st.className='status';
+  if(!CHN){st.className='status err';st.textContent='Load your stats first (top of this tab).';return}
+  if(!sample&&!getKey()){st.className='status err';st.textContent='Connect the AI writer in the Story tab first.';return}
+  st.innerHTML='<span class="spin"></span> Studying your channel…';
+  const data=CHN.videos.slice(0,30).map(v=>({title:v.title,hoursOld:Math.round(v.age),views:v.views,likes:v.likes,comments:v.comments,viewsPerHour:+v.vph.toFixed(1)}));
+  const prompt=`You are a YouTube growth analyst for an animated story channel. Study these real stats and comments and write the lessons the story writer must follow next time.
+Videos (newest first): ${JSON.stringify(data)}
+Top comments: ${JSON.stringify((CHN.comments||[]).slice(0,25).map(c=>c.text.slice(0,200)))}
+Previous lessons: ${getLearn()||'none'}
+Return ONLY JSON: {"lessons":"6-8 short bullet points (start each with '- ') about hooks, titles, story types, characters, length and pacing that perform best/worst here, with numbers where possible","requests":"what viewers are asking for, one line","nextIdea":"the single best idea for the next episode, one line"}`;
+  try{const j=sample?await sample.json(prompt):parseJ(await anthropicCall(prompt,null,1500));
+    const txt=`${j.lessons}\n- Viewers want: ${j.requests}\n- Next idea: ${j.nextIdea}`;$('#learnBox').value=txt;setLearn(txt);st.textContent='✅ Saved. The writer will use these lessons for the next episode.'}
+  catch(e){st.className='status err';st.textContent='❌ '+(e.message||e)}
+};
+$('#learnSave').onclick=()=>{setLearn($('#learnBox').value.trim());$('#learnStatus').textContent='✅ Notes saved.'};
+// autopilot settings → GitHub
+function apConfig(){const c={channel:chCfg().chan||'',series:$('#series').value,premise:$('#premise').value,startPart:$('#part').value||'Season 1, Part 1',pov:$('#pov').value,format:$('#format').value,lang:$('#lang').value,tone:$('#tone').value,
+  art:$('#artSrc').value,geminiModel:artCfg().gmodel||'gemini-2.5-flash-image',voice:$('#aiVoice').value,speed:+$('#aiSpeed').value,captions:$('#capStyle').value,capWords:+$('#capWords').value,music:+$('#musVol').value,sfx:+$('#sfxVol').value,
+  characters:EP&&!EP.demo?EP.characters:[],learnings:getLearn()};return JSON.stringify(c,null,2)}
+function repo(){return ($('#ghRepo').value.trim()||chCfg().repo||'').replace(/^https?:\/\/github\.com\//,'').replace(/\/$/,'')}
+function apLinks(){const r=repo();if(!r)return;$('#apRun').href=`https://github.com/${r}/actions/workflows/autopilot.yml`;$('#apIssues').href=`https://github.com/${r}/issues?q=label%3Areport`}
+$('#ghRepo').onchange=()=>{setChCfg({repo:repo()});apLinks();loadEpisodes()};
+$('#apConfig').onclick=()=>{const r=repo();if(!r){$('#apStatus').className='status err';$('#apStatus').textContent='Type your GitHub repo first (like msonechabackup-hub/ToonStudio).';return}
+  setChCfg({repo:r});const url=`https://github.com/${r}/new/main?filename=autopilot-config.json&value=${encodeURIComponent(apConfig())}`;
+  const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove();
+  $('#apStatus').className='status';$('#apStatus').innerHTML='GitHub is opening with your settings filled in. Tap <b>Commit changes</b>. If the file already exists, open it on GitHub, tap ✏️ and paste:<div class="bar"><button class="btn ghost sm" id="apCopy">📋 Copy settings</button></div>';
+  $('#apCopy').onclick=()=>copy(apConfig())};
+async function loadEpisodes(){const r=repo(),box=$('#apList');if(!r||!box)return;
+  try{const res=await fetch(`https://api.github.com/repos/${r}/releases?per_page=12`);if(!res.ok)throw 0;const rel=(await res.json()).filter(x=>/^ep-/.test(x.tag_name));
+    box.innerHTML=rel.length?'<label>Episodes made by autopilot</label>'+rel.map(x=>`<div class="vrow"><div style="flex:1"><div class="vt">${esc(x.name)}</div><div class="vm">${timeAgo(Date.parse(x.published_at||x.created_at))}</div></div><a class="btn sm" href="${esc(x.html_url)}" target="_blank" rel="noopener">Open & post</a></div>`).join(''):'<p class="hint">No autopilot episodes yet.</p>'}catch(e){box.innerHTML=''}}
+function renderChannelTab(){const c=chCfg();if(c.chan&&!$('#chId').value)$('#chId').value=c.chan;if(c.key)$('#ytKey').placeholder='Key saved ••••'+c.key.slice(-4);if(c.repo&&!$('#ghRepo').value)$('#ghRepo').value=c.repo;
+  $('#learnBox').value=getLearn();apLinks();loadEpisodes();if(!CHN&&c.chan&&c.key)loadChannel()}
+// ---------- autopilot entry (used by the daily GitHub run) ----------
+async function thumbBlob(i,txt){const c=document.createElement('canvas');c.width=1280;c.height=720;const g=c.getContext('2d');
+  const s=EP.scenes[i],keep=s.shot;s.shot=keep==='wide'?'medium':keep;renderScene(g,1280,720,EP,i,1.6,4);s.shot=keep;
+  txt=(txt||'').toUpperCase();if(txt){g.font='700 120px Fredoka, Arial';g.textAlign='left';g.lineJoin='round';const lines=wrap(g,txt,700);lines.forEach((l,j)=>{const y=150+j*125;g.lineWidth=26;g.strokeStyle='#111';g.strokeText(l,50,y);g.fillStyle=j===lines.length-1?'#ffd23f':'#fff';g.fillText(l,50,y)})}
+  return await new Promise(r=>c.toBlob(r,'image/png'))}
+window.autopilotEpisode=async(o)=>{
+  const log=m=>console.log('[AP] '+m);
+  try{localStorage.setItem(KEY_LS,o.anthropicKey||'')}catch(e){}
+  setArtCfg({gkey:o.geminiKey||'',gmodel:o.geminiModel||'gemini-2.5-flash-image',src:o.art});
+  const setv=(id,v)=>{if(v!=null&&$('#'+id))$('#'+id).value=v};
+  setv('series',o.series);setv('premise',o.premise);setv('part',o.part);setv('pov',o.pov);setv('format',o.format);setv('lang',o.lang);setv('tone',o.tone);setv('prev',o.prev||'');
+  setv('aiVoice',o.voice);setv('aiSpeed',o.speed);setv('capStyle',o.captions);setv('capWords',o.capWords);setv('musVol',o.music);setv('sfxVol',o.sfx);
+  setLearn(o.learnings||'');
+  if(o.characters&&o.characters.length&&(!EP||EP.demo)){EP={characters:o.characters,scenes:[{narration:'x'}],demo:false};}
+  if(EP&&!EP.demo&&o.characters&&o.characters.length)EP.characters=o.characters;
+  log('writing episode '+o.part);
+  const res=await anthropicJSON(buildPrompt(),null);acceptEpisode(res);log('written: '+EP.title+' ('+EP.scenes.length+' scenes)');
+  if(o.art&&o.art!=='cartoon'){$('#artSrc').value=o.art;const ok=await illustrate();log('illustrations '+(ok?'ok':'failed: '+$('#illStatus').innerText))}
+  if(o.voice&&o.voice!=='none'){const ok=await genNarration();log('voice '+(ok?'ok':'failed: '+$('#aiStatus').innerText))}else{$('#voiceStyle').value='blips'}
+  showTab('video');sizeMain();
+  const blob=await new Promise(res2=>{RENDER_WAIT=res2;run(true)});log('rendered '+(blob.size/1048576).toFixed(1)+' MB');
+  const y=EP.youtube||{},ti=clamp(+y.thumbnailScene||0,0,EP.scenes.length-1);
+  const th=await thumbBlob(ti,y.thumbnailText||'');
+  return{video:await blobToB64(blob),videoType:blob.type,thumb:await blobToB64(th),ep:JSON.parse(JSON.stringify(EP))};
+};
 
 // ---------- boot ----------
 load();sizeMain();drawAt(1);renderAudio();
