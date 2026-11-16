@@ -64,6 +64,7 @@ video{width:100%;max-height:64vh;border-radius:10px;margin-top:10px;background:#
 .tag{display:inline-block;background:#0f0d14;border-radius:7px;padding:3px 8px;margin:3px;font-size:12px}
 .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ok);color:#06240f;padding:8px 14px;border-radius:99px;font-weight:600;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:20}
 .toast.on{opacity:1}
+#apSteps li.done:before{content:"✓";color:var(--ok)}#apSteps li.now{color:var(--acc2);font-weight:600}#apSteps li.skip{opacity:.45}
 a.btn{text-decoration:none}
 .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}.tile{background:var(--panel2);border-radius:12px;padding:10px}.tile b{display:block;font:700 20px Fredoka}.tile span{font-size:11px;color:var(--mut)}.tile i{font-style:normal;font-size:12px;color:var(--ok)}
 .alert{background:#1f2e22;border:1px solid #2f6a40;border-radius:12px;padding:9px 12px;margin:6px 0;font-size:14px}.alert.hot{background:#3a2216;border-color:#8a4a22}
@@ -117,12 +118,16 @@ details.tips summary{cursor:pointer;color:var(--acc2);font-weight:600;font-size:
   </div>
   <div class="card" id="manualCard" style="display:none">
     <h2>🔑 Connect the AI writer</h2>
-    <p class="hint">Outside claude.ai, the writer needs your own Anthropic API key. It costs a few cents per episode, and the key stays on this phone.</p>
-    <div class="row"><div style="grid-column:span 2"><input id="apiKey" type="password" placeholder="sk-ant-…" autocomplete="off"></div></div>
+    <p class="hint"><b>Free:</b> paste a Google AI Studio key. Gemini's free tier writes stories, reads photos and studies your stats. The key stays on this phone.</p>
+    <div class="row"><div style="grid-column:span 2"><input id="wGemKey" type="password" placeholder="AIza… (free Gemini key)" autocomplete="off"></div></div>
+    <div class="bar"><button class="btn sm" id="wGemSave">Save &amp; test</button><a class="btn ghost sm" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a free key ↗</a></div>
+    <div class="status" id="wGemStatus"></div>
+    <details class="tips"><summary>Optional: Claude key (paid, best writing)</summary>
+    <div class="row" style="margin-top:8px"><div style="grid-column:span 2"><input id="apiKey" type="password" placeholder="sk-ant-…" autocomplete="off"></div></div>
     <div class="bar"><button class="btn sm" id="keySave">Save &amp; test</button><button class="btn ghost sm" id="keyDel">Remove key</button>
       <a class="btn ghost sm" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Get a key ↗</a></div>
-    <div class="status" id="keyStatus"></div>
-    <details class="tips"><summary>Free option: use the Claude app instead</summary>
+    <div class="status" id="keyStatus"></div></details>
+    <details class="tips"><summary>No key? Copy-paste with the Claude app</summary>
       <p class="hint" style="margin-top:8px">Copy the prompt, paste it into a Claude chat, then paste the reply back here.</p>
       <button class="btn ghost sm" id="copyPrompt">📋 Copy prompt</button>
       <label>Paste the reply</label><textarea id="pasteJson" placeholder='{"title": ...}'></textarea>
@@ -147,8 +152,8 @@ details.tips summary{cursor:pointer;color:var(--acc2);font-weight:600;font-size:
     <p class="hint">Turn every scene into a full AI illustration, like the viral story reels. Characters are kept consistent across scenes.</p>
     <label>Art source</label>
     <select id="artSrc">
-      <option value="gemini">✨ Gemini illustrations (best quality, consistent characters)</option>
-      <option value="free">Free illustrations (no account, slower, less consistent)</option>
+      <option value="free" selected>🆓 Free illustrations (no account needed)</option>
+      <option value="gemini">✨ Gemini illustrations (best consistency, may cost)</option>
       <option value="cartoon">Built-in cartoon (offline)</option>
     </select>
     <div id="gemBox">
@@ -254,13 +259,14 @@ details.tips summary{cursor:pointer;color:var(--acc2);font-weight:600;font-size:
     <div class="status" id="learnStatus"></div>
   </div>
   <div class="card">
-    <h2>🤖 Daily autopilot</h2>
-    <p class="hint">Every day GitHub checks your stats, learns, then writes, illustrates, voices and renders the next part. You get a notification, watch it, and post it with one tap.</p>
-    <label>GitHub repo</label><input id="ghRepo" placeholder="your-name/ToonStudio">
-    <div class="bar"><button class="btn sm" id="apConfig">⚙️ Save autopilot settings to GitHub</button><a class="btn ghost sm" id="apRun" target="_blank" rel="noopener">▶ Run now</a><a class="btn ghost sm" id="apIssues" target="_blank" rel="noopener">📈 Daily reports</a></div>
-    <p class="hint" style="margin-top:8px">The autopilot uses this app's current series, style, voice and art settings. Tap Save again whenever you change them.</p>
+    <h2>🤖 Autopilot</h2>
+    <p class="hint">Every day at your chosen time you get a notification. Tap it and keep the screen on: the app checks your stats, learns from them, then writes, illustrates, voices and renders the next part. When it's done, Share opens so you can post it to YouTube.</p>
+    <label class="check"><input type="checkbox" id="apOn"> Daily reminder to make the next episode</label>
+    <div class="row"><div><label>Time</label><input type="time" id="apTime" value="17:00"></div>
+      <div><label>When it's done</label><select id="apEnd"><option value="share">Open Share (post to YouTube)</option><option value="save">Just save it</option></select></div></div>
+    <button class="btn big" id="apNow">🤖 Run autopilot now</button>
     <div class="status" id="apStatus"></div>
-    <div id="apList"></div>
+    <div id="apHist"></div>
   </div>
 </section>
 
@@ -288,6 +294,14 @@ details.tips summary{cursor:pointer;color:var(--acc2);font-weight:600;font-size:
   <button data-tab="channel"><span>📈</span>Channel</button>
 </nav>
 <div class="toast" id="toast"></div>
+<div id="apBox" class="overlay" style="display:none"><div class="card synccard" style="text-align:left">
+  <h2 style="text-align:center">🤖 Making today's episode</h2>
+  <p class="hint" style="text-align:center">Keep the screen on and this app open.</p>
+  <ol class="steps" id="apSteps"></ol>
+  <div class="prog"><i id="apProg"></i></div>
+  <div class="status" id="apNowMsg"></div>
+  <button class="btn ghost sm" id="apCancel" style="margin-top:10px">Stop</button>
+</div></div>
 <div id="syncBox" class="overlay" style="display:none"><div class="card synccard">
   <div class="n" id="syncN"></div><div class="synctext" id="syncText"></div>
   <p class="hint" id="syncHint">Your voiceover is playing. Tap the big button the moment you start reading the NEXT scene.</p>
@@ -904,7 +918,8 @@ const IMGS={};const FACES={};
 const LEARN_LS='toonStudio.learn';const getLearn=()=>{try{return localStorage.getItem(LEARN_LS)||''}catch(e){return ''}};const setLearn=v=>{try{localStorage.setItem(LEARN_LS,v)}catch(e){}};
 let RENDER_WAIT=null;
 const NATIVE=(()=>{try{return !!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())}catch(e){return false}})();
-const KEY_LS='toonStudio.key';const getKey=()=>{try{return localStorage.getItem(KEY_LS)||''}catch(e){return ''}};
+const KEY_LS='toonStudio.key';
+const hasAI=()=>!!(sample||getKey()||(artCfg().gkey));const getKey=()=>{try{return localStorage.getItem(KEY_LS)||''}catch(e){return ''}};
 let EP=null, sample=null, downloads=null, tts=null;
 
 const DEMO={title:"The Last Minute",logline:"You're on the bench for the biggest match of the season, until the 89th minute.",format:'short',
@@ -1053,11 +1068,11 @@ function acceptEpisode(j){
 }
 $('#genBtn').onclick=async()=>{
   save();const st=$('#genStatus');st.className='status';
-  if(!sample&&!getKey()){$('#manualCard').style.display='block';$('#manualCard').scrollIntoView({behavior:'smooth'});st.textContent='Connect the AI writer below first (or use the free copy-paste option).';return}
+  if(!hasAI()){$('#manualCard').style.display='block';$('#manualCard').scrollIntoView({behavior:'smooth'});st.textContent='Connect the AI writer below first (or use the free copy-paste option).';return}
   const b=$('#genBtn');b.disabled=true;b.innerHTML='<span class="spin"></span> Writing & storyboarding…';
   try{
     const onT=n=>{st.textContent=`Writing… ${n} characters`};
-    const res=sample?await sample.json(buildPrompt(),{modelTier:'complex',onText:({text})=>onT(text.length)}):await anthropicJSON(buildPrompt(),onT);
+    const res=await aiJSON(buildPrompt(),onT);
     acceptEpisode(res);st.textContent='✅ Episode ready. Check Cast & Scenes, then make the video.';
   }catch(e){
     st.className='status err';
@@ -1702,7 +1717,7 @@ $('#chLoad').onclick=loadChannel;
 $('#learnBtn').onclick=async()=>{
   const st=$('#learnStatus');st.className='status';
   if(!CHN){st.className='status err';st.textContent='Load your stats first (top of this tab).';return}
-  if(!sample&&!getKey()){st.className='status err';st.textContent='Connect the AI writer in the Story tab first.';return}
+  if(!hasAI()){st.className='status err';st.textContent='Connect the AI writer in the Story tab first (a free Gemini key works).';return}
   st.innerHTML='<span class="spin"></span> Studying your channel…';
   const data=CHN.videos.slice(0,30).map(v=>({title:v.title,hoursOld:Math.round(v.age),views:v.views,likes:v.likes,comments:v.comments,viewsPerHour:+v.vph.toFixed(1)}));
   const prompt=`You are a YouTube growth analyst for an animated story channel. Study these real stats and comments and write the lessons the story writer must follow next time.
@@ -1710,28 +1725,13 @@ Videos (newest first): ${JSON.stringify(data)}
 Top comments: ${JSON.stringify((CHN.comments||[]).slice(0,25).map(c=>c.text.slice(0,200)))}
 Previous lessons: ${getLearn()||'none'}
 Return ONLY JSON: {"lessons":"6-8 short bullet points (start each with '- ') about hooks, titles, story types, characters, length and pacing that perform best/worst here, with numbers where possible","requests":"what viewers are asking for, one line","nextIdea":"the single best idea for the next episode, one line"}`;
-  try{const j=sample?await sample.json(prompt):parseJ(await anthropicCall(prompt,null,1500));
+  try{const j=await aiJSON(prompt);
     const txt=`${j.lessons}\n- Viewers want: ${j.requests}\n- Next idea: ${j.nextIdea}`;$('#learnBox').value=txt;setLearn(txt);st.textContent='✅ Saved. The writer will use these lessons for the next episode.'}
   catch(e){st.className='status err';st.textContent='❌ '+(e.message||e)}
 };
 $('#learnSave').onclick=()=>{setLearn($('#learnBox').value.trim());$('#learnStatus').textContent='✅ Notes saved.'};
-// autopilot settings → GitHub
-function apConfig(){const c={channel:chCfg().chan||'',series:$('#series').value,premise:$('#premise').value,startPart:$('#part').value||'Season 1, Part 1',pov:$('#pov').value,format:$('#format').value,lang:$('#lang').value,tone:$('#tone').value,
-  art:$('#artSrc').value,geminiModel:artCfg().gmodel||'gemini-2.5-flash-image',voice:$('#aiVoice').value,speed:+$('#aiSpeed').value,captions:$('#capStyle').value,capWords:+$('#capWords').value,music:+$('#musVol').value,sfx:+$('#sfxVol').value,
-  characters:EP&&!EP.demo?EP.characters:[],learnings:getLearn()};return JSON.stringify(c,null,2)}
-function repo(){return ($('#ghRepo').value.trim()||chCfg().repo||'').replace(/^https?:\/\/github\.com\//,'').replace(/\/$/,'')}
-function apLinks(){const r=repo();if(!r)return;$('#apRun').href=`https://github.com/${r}/actions/workflows/autopilot.yml`;$('#apIssues').href=`https://github.com/${r}/issues?q=label%3Areport`}
-$('#ghRepo').onchange=()=>{setChCfg({repo:repo()});apLinks();loadEpisodes()};
-$('#apConfig').onclick=()=>{const r=repo();if(!r){$('#apStatus').className='status err';$('#apStatus').textContent='Type your GitHub repo first (like msonechabackup-hub/ToonStudio).';return}
-  setChCfg({repo:r});const url=`https://github.com/${r}/new/main?filename=autopilot-config.json&value=${encodeURIComponent(apConfig())}`;
-  const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove();
-  $('#apStatus').className='status';$('#apStatus').innerHTML='GitHub is opening with your settings filled in. Tap <b>Commit changes</b>. If the file already exists, open it on GitHub, tap ✏️ and paste:<div class="bar"><button class="btn ghost sm" id="apCopy">📋 Copy settings</button></div>';
-  $('#apCopy').onclick=()=>copy(apConfig())};
-async function loadEpisodes(){const r=repo(),box=$('#apList');if(!r||!box)return;
-  try{const res=await fetch(`https://api.github.com/repos/${r}/releases?per_page=12`);if(!res.ok)throw 0;const rel=(await res.json()).filter(x=>/^ep-/.test(x.tag_name));
-    box.innerHTML=rel.length?'<label>Episodes made by autopilot</label>'+rel.map(x=>`<div class="vrow"><div style="flex:1"><div class="vt">${esc(x.name)}</div><div class="vm">${timeAgo(Date.parse(x.published_at||x.created_at))}</div></div><a class="btn sm" href="${esc(x.html_url)}" target="_blank" rel="noopener">Open & post</a></div>`).join(''):'<p class="hint">No autopilot episodes yet.</p>'}catch(e){box.innerHTML=''}}
-function renderChannelTab(){const c=chCfg();if(c.chan&&!$('#chId').value)$('#chId').value=c.chan;if(c.key)$('#ytKey').placeholder='Key saved ••••'+c.key.slice(-4);if(c.repo&&!$('#ghRepo').value)$('#ghRepo').value=c.repo;
-  $('#learnBox').value=getLearn();apLinks();loadEpisodes();if(!CHN&&c.chan&&c.key)loadChannel()}
+function renderChannelTab(){const c=chCfg();if(c.chan&&!$('#chId').value)$('#chId').value=c.chan;if(c.key)$('#ytKey').placeholder='Key saved ••••'+c.key.slice(-4);
+  $('#learnBox').value=getLearn();renderApHist();if(!CHN&&c.chan&&c.key)loadChannel()}
 // ---------- autopilot entry (used by the daily GitHub run) ----------
 async function thumbBlob(i,txt){const c=document.createElement('canvas');c.width=1280;c.height=720;const g=c.getContext('2d');
   const s=EP.scenes[i],keep=s.shot;s.shot=keep==='wide'?'medium':keep;renderScene(g,1280,720,EP,i,1.6,4);s.shot=keep;
@@ -1748,7 +1748,7 @@ window.autopilotEpisode=async(o)=>{
   if(o.characters&&o.characters.length&&(!EP||EP.demo)){EP={characters:o.characters,scenes:[{narration:'x'}],demo:false};}
   if(EP&&!EP.demo&&o.characters&&o.characters.length)EP.characters=o.characters;
   log('writing episode '+o.part);
-  const res=await anthropicJSON(buildPrompt(),null);acceptEpisode(res);log('written: '+EP.title+' ('+EP.scenes.length+' scenes)');
+  const res=await aiJSON(buildPrompt(),null);acceptEpisode(res);log('written: '+EP.title+' ('+EP.scenes.length+' scenes)');
   if(o.art&&o.art!=='cartoon'){$('#artSrc').value=o.art;const ok=await illustrate();log('illustrations '+(ok?'ok':'failed: '+$('#illStatus').innerText))}
   if(o.voice&&o.voice!=='none'){const ok=await genNarration();log('voice '+(ok?'ok':'failed: '+$('#aiStatus').innerText))}else{$('#voiceStyle').value='blips'}
   showTab('video');sizeMain();
@@ -1757,6 +1757,107 @@ window.autopilotEpisode=async(o)=>{
   const th=await thumbBlob(ti,y.thumbnailText||'');
   return{video:await blobToB64(blob),videoType:blob.type,thumb:await blobToB64(th),ep:JSON.parse(JSON.stringify(EP))};
 };
+
+// ---------- AI brain: claude.ai → Claude key → free Gemini ----------
+async function geminiText(prompt,json){
+  const k=artCfg().gkey;if(!k)throw new Error('Add a free Gemini key in the Story tab');
+  const model=artCfg().tmodel||'gemini-2.5-flash';
+  for(let a=0;a<3;a++){
+    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(k)}`,{method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:16000,temperature:.9,...(json?{responseMimeType:'application/json'}:{})}})});
+    if(r.status===429||r.status===503){if(a<2){await sleep(20000*(a+1));continue}throw new Error('Gemini free limit reached for now. Wait a minute (or until tomorrow) and try again.')}
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(r.status===400&&/API key/i.test(JSON.stringify(j))?'Google rejected the key. Check it.':(j.error&&j.error.message)||('Gemini error '+r.status));
+    const t=((j.candidates||[])[0]||{}).content;const txt=t?t.parts.map(p=>p.text||'').join(''):'';
+    if(!txt){if(a<2)continue;throw new Error('Gemini returned nothing. Try again.')}
+    return txt;
+  }
+}
+async function aiJSON(prompt,onT){
+  if(sample)return parseJ(await sample.json(prompt,{modelTier:'complex',onText:onT?({text})=>onT(text.length):undefined}));
+  if(getKey())return await anthropicJSON(prompt,onT);
+  if(onT)onT(0);
+  return parseJ(await geminiText(prompt,true));
+}
+$('#wGemSave').onclick=async()=>{const k=$('#wGemKey').value.trim(),st=$('#wGemStatus');st.className='status';
+  if(!/^AIza/.test(k)){st.className='status err';st.textContent='Google keys start with AIza';return}
+  setArtCfg({gkey:k});$('#gemKey').placeholder='Key saved ••••'+k.slice(-4);st.textContent='Testing…';
+  try{await geminiText('Reply with just: ok');st.textContent='✅ Free key works. Tap ✨ Write & storyboard episode.';$('#wGemKey').value='';$('#wGemKey').placeholder='Key saved ••••'+k.slice(-4)}
+  catch(e){st.className='status err';st.textContent='❌ '+(/Failed to fetch/i.test(e.message)?(inClaude()?'Keys work in the Toon Studio app, not inside claude.ai.':'No internet connection.'):e.message)}};
+// ---------- 🤖 in-app autopilot ----------
+const AP_LS='toonStudio.autopilot';
+function apCfg(){try{return JSON.parse(localStorage.getItem(AP_LS)||'{}')}catch(e){return{}}}
+function setApCfg(o){try{localStorage.setItem(AP_LS,JSON.stringify({...apCfg(),...o}))}catch(e){}}
+const LN=()=>NATIVE&&Capacitor.Plugins&&Capacitor.Plugins.LocalNotifications;
+async function notify(title,body,id=4800){const L=LN();if(!L)return;try{await L.schedule({notifications:[{id,title,body,schedule:{at:new Date(Date.now()+1500)}}]})}catch(e){}}
+async function applySchedule(){
+  const c=apCfg(),L=LN(),st=$('#apStatus');
+  if(!L){if(c.on){st.className='status';st.textContent=inClaude()?'Daily reminders work in the Toon Studio Android app. You can still tap Run autopilot now.':'Daily reminders need the Android app.'}return}
+  try{await L.cancel({notifications:[{id:4747}]})}catch(e){}
+  if(!c.on){st.textContent='Daily reminder is off.';return}
+  const p=await L.requestPermissions();if(p.display!=='granted'){st.className='status err';st.textContent='Allow notifications for Toon Studio in Android settings.';return}
+  const[h,m]=(c.time||'17:00').split(':').map(Number);
+  await L.schedule({notifications:[{id:4747,title:'🎬 Time for today’s episode',body:'Tap and Toon Studio makes it for you. Keep the screen on for a few minutes.',schedule:{on:{hour:h,minute:m},repeats:true,allowWhileIdle:true},extra:{autopilot:1}}]});
+  st.className='status';st.textContent=`✅ Reminder set for ${c.time||'17:00'} every day.`;
+}
+$('#apOn').onchange=()=>{setApCfg({on:$('#apOn').checked});applySchedule()};
+$('#apTime').onchange=()=>{setApCfg({time:$('#apTime').value});applySchedule()};
+$('#apEnd').onchange=()=>setApCfg({end:$('#apEnd').value});
+function renderApHist(){const h=(apCfg().hist||[]).slice(-8).reverse();$('#apHist').innerHTML=h.length?'<label>Recent autopilot runs</label>'+h.map(x=>`<div class="vm" style="padding:4px 0">${x.ok?'✅':'⚠️'} ${esc(x.date)} · ${esc(x.title||x.msg||'')}</div>`).join(''):''}
+let AP_STOP=false,WAKE=null;
+async function runAutopilotLocal(){
+  if($('#apBox').style.display==='grid')return;
+  if(!hasAI()){showTab('story');$('#manualCard').style.display='block';toast('Connect the AI writer first (a free Gemini key works)');return}
+  AP_STOP=false;const steps=[['stats','Check channel stats'],['learn','Learn what works'],['write','Write the next part'],['art','Illustrate scenes'],['voice','Record the AI voice'],['render','Render the video'],['post','Get it ready to post']];
+  $('#apSteps').innerHTML=steps.map(([k,l])=>`<li data-k="${k}">${l}</li>`).join('');$('#apBox').style.display='grid';$('#apNowMsg').textContent='';
+  try{WAKE=await navigator.wakeLock.request('screen')}catch(e){}
+  const mark=(k,cls)=>{const li=document.querySelector(`#apSteps li[data-k="${k}"]`);if(li){li.className=cls}const i=steps.findIndex(s=>s[0]===k);$('#apProg').style.width=(100*(i+(cls==='now'?0:1))/steps.length)+'%'};
+  const msg=t=>{$('#apNowMsg').innerHTML=t};const chk=()=>{if(AP_STOP)throw new Error('Stopped')};
+  let title='';
+  try{
+    // 1 stats
+    mark('stats','now');const cc=chCfg();
+    if(cc.chan&&cc.key){try{const ch=await fetchChannel(cc.chan,cc.key);const an=analyse(ch);ch.comments=await fetchComments(ch.videos,cc.key);CHN=ch;saveSnap(ch);msg(an.alerts[0]?esc(an.alerts[0].t):`${fmtN(ch.subs)} subscribers · ${fmtN(ch.views)} views`);mark('stats','done')}catch(e){msg('Stats skipped: '+esc(e.message));mark('stats','skip')}}else mark('stats','skip');chk();
+    // 2 learn
+    mark('learn','now');
+    if(CHN&&CHN.videos.length>=2){try{await $('#learnBtn').onclick();mark('learn','done')}catch(e){mark('learn','skip')}}else mark('learn','skip');chk();
+    // 3 write next part
+    mark('write','now');
+    if(EP&&!EP.demo){const prev=$('#prev').value.trim();$('#prev').value=(prev?prev+'\n\n':'')+`[${$('#part').value||'Part'}] ${EP.summary||''}\nSet up for next: ${EP.nextHook||''}`;const m=($('#part').value||'').match(/(\d+)\s*$/);if(m)$('#part').value=$('#part').value.replace(/(\d+)\s*$/,String(+m[1]+1))}
+    save();msg('Writing '+esc($('#part').value||'the episode')+'…');
+    const res=await aiJSON(buildPrompt(),n=>msg(n?`Writing… ${n} characters`:'Writing… (about a minute)'));acceptEpisode(res);title=EP.title;mark('write','done');msg('“'+esc(title)+'”');chk();
+    // 4 art
+    mark('art','now');
+    if($('#artSrc').value!=='cartoon'){const ok=await illustrate();msg(ok?'Scenes illustrated':'Illustrations failed, using cartoon art: '+esc($('#illStatus').innerText.slice(0,120)));mark('art',ok?'done':'skip')}else mark('art','skip');chk();
+    // 5 voice
+    mark('voice','now');msg('Recording the voice… (a minute or two)');const vok=await genNarration();mark('voice',vok?'done':'skip');chk();
+    // 6 render
+    mark('render','now');showTab('video');$('#apBox').style.display='grid';sizeMain();msg('Recording the video in real time…');
+    const blob=await new Promise(r=>{RENDER_WAIT=r;run(true)});mark('render','done');
+    // 7 post
+    mark('post','now');
+    const y=EP.youtube||{},kit=`${(y.titles||[EP.title])[0]}\n\n${y.description||''}\n\n${(y.tags||[]).map(t=>'#'+t.replace(/\s+/g,'')).slice(0,3).join(' ')}`;
+    try{await navigator.clipboard.writeText(kit)}catch(e){}
+    const ext=blob.type.includes('mp4')?'mp4':'webm',name=([$('#part').value,EP.title].filter(Boolean).join(' ').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'-').slice(0,80)||'episode')+'.'+ext;
+    $('#apBox').style.display='none';
+    if(apCfg().end!=='save'||!NATIVE)await saveFile(name,blob,$('#renderStatus'));
+    else{try{const b64=await blobToB64(blob);await Capacitor.Plugins.Filesystem.writeFile({path:'ToonStudio/'+name,data:b64,directory:'DOCUMENTS',recursive:true})}catch(e){}}
+    mark('post','done');toast('✅ Episode ready. Title & description copied');
+    setApCfg({hist:[...(apCfg().hist||[]),{date:new Date().toLocaleString(),title,ok:1}].slice(-20)});
+    notify('✅ Episode ready: '+title,'Title & description are copied. Paste them when you post.');
+  }catch(e){
+    msg('❌ '+esc(e.message||e));setApCfg({hist:[...(apCfg().hist||[]),{date:new Date().toLocaleString(),msg:String(e.message||e).slice(0,80),ok:0}].slice(-20)});
+    $('#apCancel').textContent='Close';return;
+  }finally{try{WAKE&&WAKE.release()}catch(e){}WAKE=null;renderApHist()}
+}
+$('#apNow').onclick=runAutopilotLocal;
+$('#apCancel').onclick=()=>{AP_STOP=true;if(RUN)RUN.stop();$('#apBox').style.display='none';$('#apCancel').textContent='Stop'};
+(()=>{const c=apCfg();$('#apOn').checked=!!c.on;if(c.time)$('#apTime').value=c.time;if(c.end)$('#apEnd').value=c.end;
+  const L=LN();if(L){L.addListener('localNotificationActionPerformed',e=>{if(e&&e.notification&&e.notification.extra&&e.notification.extra.autopilot)setTimeout(runAutopilotLocal,800)});applySchedule()}
+  // check stats quietly on open (every 3h) and alert milestones
+  const sn=snaps(),cc=chCfg();if(cc.chan&&cc.key&&(!sn.length||Date.now()-sn[sn.length-1].ts>3*3600e3)){fetchChannel(cc.chan,cc.key).then(ch=>{const an=analyse(ch);CHN=ch;saveSnap(ch);if(an.alerts[0]){toast(an.alerts[0].t.slice(0,70));notify('📈 Toon Studio',an.alerts[0].t)}}).catch(()=>{})}
+  const g=artCfg().gkey;if(g){$('#wGemKey').placeholder='Key saved ••••'+g.slice(-4)}
+})();
 
 // ---------- boot ----------
 load();sizeMain();drawAt(1);renderAudio();
